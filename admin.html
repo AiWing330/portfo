@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMS Login | Wing Lee Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:        #0B0E1C;
+  --panel:     #131730;
+  --panel-2:   #1B2042;
+  --border:    #2A3060;
+  --ink:       #E8E9F5;
+  --ink-soft:  #9498BE;
+  --neon-pink: #FF6FD8;
+  --neon-cyan: #4DD8E8;
+  --neon-gold: #FFC857;
+  --neon-green:#7CF29C;
+  --neon-red:  #FF6B6B;
+  --neon-purple:#A78BFA;
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-display: 'Silkscreen', monospace;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+a{ color:inherit; text-decoration:none; }
+input, textarea, select{
+  font-family: var(--font-body);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 9px 12px;
+  font-size: 14px;
+  width: 100%;
+}
+input:focus, textarea:focus, select:focus{ outline: 2px solid var(--neon-cyan); border-color: var(--neon-cyan); }
+textarea{ resize: vertical; min-height: 70px; font-family: var(--font-body); }
+label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); margin-bottom: 6px; letter-spacing:0.04em; }
+.field{ margin-bottom: 14px; }
+.btn{
+  font-family: var(--font-mono); font-size: 13px; font-weight:700;
+  padding: 10px 18px; border-radius:4px; border:2px solid transparent;
+  cursor:pointer; transition: all .15s; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-primary{ background: var(--neon-gold); color:#1A1200; box-shadow:0 3px 0 #B8893C; }
+.btn-primary:hover{ transform:translateY(1px); box-shadow:0 2px 0 #B8893C; }
+.btn-ghost{ border-color: var(--border); color: var(--ink); background: var(--panel); }
+.btn-ghost:hover{ border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.btn-danger{ border-color: var(--neon-red); color: var(--neon-red); background: rgba(255,107,107,0.08); }
+.btn-danger:hover{ background: rgba(255,107,107,0.16); }
+.btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+/* ---------- LOGIN ---------- */
+#loginScreen{
+  min-height: 100vh; display:flex; align-items:center; justify-content:center;
+  background-image: radial-gradient(circle at 20% 10%, rgba(167,139,250,0.10), transparent 40%),
+                     radial-gradient(circle at 85% 5%, rgba(77,216,232,0.08), transparent 35%);
+}
+.login-box{
+  background: var(--panel); border:2px solid var(--border); border-radius: 8px;
+  padding: 40px; width: 100%; max-width: 380px;
+}
+.login-box .logo{ font-family: var(--font-pixel); font-size:14px; margin-bottom:6px; }
+.login-box .sub{ font-family: var(--font-mono); font-size:11px; color: var(--neon-cyan); margin-bottom: 28px; }
+.login-error{ color: var(--neon-red); font-size:13px; margin-top:10px; font-family: var(--font-mono); display:none; }
+
+/* ---------- ADMIN SHELL ---------- */
+#adminScreen{ display:none; }
+.admin-shell{ display:flex; min-height:100vh; }
+.sidebar{
+  width: 220px; flex-shrink:0; background: var(--panel);
+  border-right:2px solid var(--border); padding: 24px 0;
+}
+.sidebar .logo-block{ padding: 0 20px 24px; border-bottom:1px solid var(--border); margin-bottom: 16px; }
+.sidebar .logo{ font-family: var(--font-pixel); font-size:13px; }
+.sidebar .sub{ font-family: var(--font-mono); font-size:10px; color: var(--neon-cyan); margin-top:4px; }
+.sidebar nav a{
+  display:flex; align-items:center; gap:10px;
+  padding: 12px 20px; font-family: var(--font-mono); font-size:13px; color: var(--ink-soft);
+  border-left: 3px solid transparent; cursor:pointer;
+}
+.sidebar nav a:hover{ color: var(--ink); background: rgba(255,255,255,0.02); }
+.sidebar nav a.active{ color: var(--neon-pink); border-left-color: var(--neon-pink); background: rgba(255,111,216,0.06); }
+.sidebar .logout{ margin-top:24px; padding:0 20px; }
+
+.main-area{ flex:1; padding: 32px 40px; max-width: 980px; }
+.page-title{ font-family: var(--font-display); font-size: 22px; margin-bottom: 6px; }
+.page-sub{ color: var(--ink-soft); font-size: 13px; margin-bottom: 28px; }
+
+.panel{ background: var(--panel); border:1px solid var(--border); border-radius:6px; padding:22px; margin-bottom:18px; }
+.panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.panel-head h3{ font-family: var(--font-display); font-size:15px; }
+.panel-head .tag{ font-family: var(--font-mono); font-size:11px; color: var(--neon-cyan); }
+
+.lang-tabs{ display:flex; gap:4px; margin-bottom:12px; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:3px; width:fit-content; }
+.lang-tabs button{
+  background:none; border:none; font-family: var(--font-mono); font-size:11px; color: var(--ink-soft);
+  padding: 5px 12px; border-radius:3px; cursor:pointer;
+}
+.lang-tabs button.active{ background: var(--neon-cyan); color:#061018; }
+
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.tags-input-hint{ font-size:11px; color: var(--ink-soft); margin-top:4px; }
+
+.img-upload{
+  display:flex; align-items:center; gap:14px; margin-bottom: 8px;
+}
+.img-preview{
+  width:80px; height:60px; border-radius:4px; background:var(--bg);
+  border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:10px; color:var(--ink-soft); overflow:hidden; flex-shrink:0;
+}
+.img-preview img{ width:100%; height:100%; object-fit:cover; }
+
+.toast{
+  position:fixed; bottom:24px; right:24px; background: var(--panel-2); border:1px solid var(--neon-green);
+  color: var(--ink); padding:14px 20px; border-radius:6px; font-family:var(--font-mono); font-size:13px;
+  display:none; align-items:center; gap:8px; z-index:200; box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.error{ border-color: var(--neon-red); }
+.toast.show{ display:flex; }
+
+.item-card{ border:1px solid var(--border); border-radius:6px; padding:16px; margin-bottom:12px; background:var(--bg); }
+.item-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.item-card-head .name{ font-weight:600; font-size:14px; }
+.empty-state{ text-align:center; padding:40px 20px; color: var(--ink-soft); font-size:13px; }
+
+.spinner{ width:16px; height:16px; border:2px solid var(--border); border-top-color: var(--neon-cyan); border-radius:50%; animation: spin .7s linear infinite; }
+@keyframes spin{ to{ transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo">WING LEE</div>
+    <div class="sub">CMS LOGIN</div>
+    <form id="loginForm">
+      <div class="field">
+        <label>EMAIL</label>
+        <input type="email" id="loginEmail" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;" id="loginBtn">
+        LOGIN
+      </button>
+      <div class="login-error" id="loginError"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ ADMIN SCREEN ============ -->
+<div id="adminScreen">
+  <div class="admin-shell">
+    <aside class="sidebar">
+      <div class="logo-block">
+        <div class="logo">WING LEE</div>
+        <div class="sub">CMS DASHBOARD</div>
+      </div>
+      <nav>
+        <a data-page="skills" class="active">⚡ Skills</a>
+        <a data-page="projects">★ Main Quests</a>
+        <a data-page="works">▸ Past Works</a>
+        <a data-page="education">🎓 Education</a>
+        <a data-page="bio">📜 Bio / Hero</a>
+      </nav>
+      <div class="logout">
+        <button class="btn btn-ghost" id="logoutBtn" style="width:100%;">⎋ LOGOUT</button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <div id="pageContent"><!-- JS render --></div>
+    </main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Supabase 連線設定 — 請填入你的 Project URL 與 anon/publishable key
+   ============================================================ */
+const SUPABASE_URL = 'https://rgcxzhhmqoyqhlmavqll.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4nbpaqecLZQ7ddgLSEJrYQ_X3-CYmZ0';
+const STORAGE_BUCKET = 'portfolio-images';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentPage = 'skills';
+let langTab = 'zh';
+
+/* ---------- Toast ---------- */
+function showToast(msg, isError=false){
+  const t = document.getElementById('toast');
+  t.textContent = (isError ? '✕ ' : '✓ ') + msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(()=>{ t.className='toast'; }, 3000);
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+async function checkSession(){
+  const { data } = await sb.auth.getSession();
+  if(data.session){
+    showAdmin();
+  }else{
+    showLogin();
+  }
+}
+function showLogin(){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminScreen').style.display = 'none';
+}
+function showAdmin(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminScreen').style.display = 'block';
+  renderPage(currentPage);
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = 'LOGGING IN...';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false; btn.textContent = 'LOGIN';
+  if(error){
+    errEl.textContent = '登入失敗：' + error.message;
+    errEl.style.display = 'block';
+  }else{
+    showAdmin();
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  showLogin();
+});
+
+/* ============================================================
+   側邊選單切換
+   ============================================================ */
+document.querySelectorAll('.sidebar nav a').forEach(a=>{
+  a.addEventListener('click', ()=>{
+    document.querySelectorAll('.sidebar nav a').forEach(x=>x.classList.remove('active'));
+    a.classList.add('active');
+    currentPage = a.dataset.page;
+    renderPage(currentPage);
+  });
+});
+
+/* ============================================================
+   圖片上傳工具
+   ============================================================ */
+async function uploadImage(file){
+  const ext = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const { error } = await sb.storage.from(STORAGE_BUCKET).upload(fileName, file);
+  if(error){ throw error; }
+  const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+/* ============================================================
+   頁面渲染路由
+   ============================================================ */
+async function renderPage(page){
+  const root = document.getElementById('pageContent');
+  root.innerHTML = `<div class="empty-state"><div class="spinner" style="margin:0 auto 12px;"></div>Loading...</div>`;
+  if(page === 'skills') return renderSkillsPage();
+  if(page === 'projects') return renderProjectsPage();
+  if(page === 'works') return renderWorksPage();
+  if(page === 'education') return renderEducationPage();
+  if(page === 'bio') return renderBioPage();
+}
+
+/* ============================================================
+   SKILLS 頁
+   ============================================================ */
+async function renderSkillsPage(){
+  const root = document.getElementById('pageContent');
+  const { data: skills, error } = await sb.from('skills').select('*').order('sort_order');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  root.innerHTML = `
+    <div class="page-title">⚡ Skills</div>
+    <div class="page-sub">管理技能分類與標籤。改完按「儲存」即可即時反映到網站。</div>
+    <div id="skillsList"></div>
+    <button class="btn btn-ghost" id="addSkillBtn">+ 新增技能分類</button>
+  `;
+
+  const list = document.getElementById('skillsList');
+  skills.forEach(s => list.appendChild(buildSkillCard(s)));
+
+  document.getElementById('addSkillBtn').addEventListener('click', ()=>{
+    list.appendChild(buildSkillCard({ id:null, name_zh:'', name_en:'', name_ja:'', tags:[], icon:'◆', bg_color:'rgba(255,111,216,0.12)', fg_color:'var(--neon-pink)', sort_order: skills.length+1 }));
+  });
+}
+
+function buildSkillCard(s){
+  const card = document.createElement('div');
+  card.className = 'panel';
+  card.innerHTML = `
+    <div class="panel-head">
+      <h3>${s.name_zh || '（新分類）'}</h3>
+      <span class="tag">#${s.sort_order ?? ''}</span>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>分類名稱（中）</label><input class="f-name-zh" value="${esc(s.name_zh)}"></div>
+      <div class="field"><label>分類名稱（英）</label><input class="f-name-en" value="${esc(s.name_en)}"></div>
+      <div class="field"><label>分類名稱（日）</label><input class="f-name-ja" value="${esc(s.name_ja)}"></div>
+    </div>
+    <div class="field">
+      <label>標籤（用逗號分隔）</label>
+      <input class="f-tags" value="${esc((s.tags||[]).join(', '))}">
+      <div class="tags-input-hint">例如：Figma, Photoshop, Illustrator</div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button class="btn btn-primary btn-save">儲存</button>
+      <button class="btn btn-danger btn-delete">刪除</button>
+    </div>
+  `;
+  card.querySelector('.btn-save').addEventListener('click', async ()=>{
+    const payload = {
+      name_zh: card.querySelector('.f-name-zh').value.trim(),
+      name_en: card.querySelector('.f-name-en').value.trim(),
+      name_ja: card.querySelector('.f-name-ja').value.trim(),
+      tags: card.querySelector('.f-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
+      icon: s.icon || '◆',
+      bg_color: s.bg_color || 'rgba(255,111,216,0.12)',
+      fg_color: s.fg_color || 'var(--neon-pink)',
+      sort_order: s.sort_order || 0,
+    };
+    let res;
+    if(s.id){
+      res = await sb.from('skills').update(payload).eq('id', s.id);
+    }else{
+      res = await sb.from('skills').insert(payload).select().single();
+      if(res.data) s.id = res.data.id;
+    }
+    if(res.error){ showToast(res.error.message, true); } else { showToast('已儲存'); }
+  });
+  card.querySelector('.btn-delete').addEventListener('click', async ()=>{
+    if(!confirm('確定要刪除這個技能分類嗎？')) return;
+    if(s.id){
+      const { error } = await sb.from('skills').delete().eq('id', s.id);
+      if(error){ showToast(error.message, true); return; }
+    }
+    card.remove();
+    showToast('已刪除');
+  });
+  return card;
+}
+
+/* ============================================================
+   PROJECTS 頁（Main Quests）
+   ============================================================ */
+async function renderProjectsPage(){
+  const root = document.getElementById('pageContent');
+  const { data: projects, error } = await sb.from('projects').select('*').order('sort_order');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  root.innerHTML = `
+    <div class="page-title">★ Main Quests</div>
+    <div class="page-sub">管理三個主要專案的內容、圖片、流程與成果。</div>
+    <div id="projList"></div>
+  `;
+  const list = document.getElementById('projList');
+
+  for(const p of projects){
+    const { data: metas } = await sb.from('project_meta').select('*').eq('project_id', p.id).order('sort_order');
+    const { data: steps } = await sb.from('project_steps').select('*').eq('project_id', p.id).order('sort_order');
+    list.appendChild(buildProjectCard(p, metas||[], steps||[]));
+  }
+}
+
+function buildProjectCard(p, metas, steps){
+  const card = document.createElement('div');
+  card.className = 'panel';
+  card.innerHTML = `
+    <div class="panel-head">
+      <h3>${p.title}</h3>
+      <span class="tag">key: ${p.key}</span>
+    </div>
+
+    <div class="img-upload">
+      <div class="img-preview" id="thumbPreview-${p.id}">
+        ${p.thumb_image_url ? `<img src="${esc(p.thumb_image_url)}">` : '無圖'}
+      </div>
+      <div style="flex:1;">
+        <label>專案縮圖（上傳後自動取代漸層底色）</label>
+        <input type="file" accept="image/*" class="f-thumb-file">
+      </div>
+    </div>
+
+    <div class="lang-tabs proj-lang-tabs">
+      <button data-l="zh" class="active">中</button>
+      <button data-l="en">EN</button>
+      <button data-l="ja">日</button>
+    </div>
+
+    <div class="field"><label>角色 / Role</label>
+      <input class="f-role-zh lang-zh" value="${esc(p.role_zh)}">
+      <input class="f-role-en lang-en" value="${esc(p.role_en)}" style="display:none;">
+      <input class="f-role-ja lang-ja" value="${esc(p.role_ja)}" style="display:none;">
+    </div>
+
+    <div class="field"><label>副標 / Sub</label>
+      <input class="f-sub-zh lang-zh" value="${esc(p.sub_zh)}">
+      <input class="f-sub-en lang-en" value="${esc(p.sub_en)}" style="display:none;">
+      <input class="f-sub-ja lang-ja" value="${esc(p.sub_ja)}" style="display:none;">
+    </div>
+
+    <div class="field"><label>專案概述 / Overview</label>
+      <textarea class="f-overview-zh lang-zh">${esc(p.overview_zh)}</textarea>
+      <textarea class="f-overview-en lang-en" style="display:none;">${esc(p.overview_en)}</textarea>
+      <textarea class="f-overview-ja lang-ja" style="display:none;">${esc(p.overview_ja)}</textarea>
+    </div>
+
+    <div class="field"><label>關鍵成果 / Result</label>
+      <textarea class="f-result-zh lang-zh">${esc(p.result_zh)}</textarea>
+      <textarea class="f-result-en lang-en" style="display:none;">${esc(p.result_en)}</textarea>
+      <textarea class="f-result-ja lang-ja" style="display:none;">${esc(p.result_ja)}</textarea>
+    </div>
+
+    <div class="field"><label>標籤（逗號分隔，例如 STRATEGY, MARKETING）</label>
+      <input class="f-tags" value="${esc((p.tags||[]).join(', '))}">
+    </div>
+
+    <div style="margin-top:18px; border-top:1px dashed var(--border); padding-top:16px;">
+      <label style="margin-bottom:10px;">META 資訊（CATEGORY / ROLE / DURATION 等）</label>
+      <div class="meta-list"></div>
+      <button class="btn btn-ghost btn-add-meta" style="margin-top:6px;">+ 新增 META</button>
+    </div>
+
+    <div style="margin-top:18px; border-top:1px dashed var(--border); padding-top:16px;">
+      <label style="margin-bottom:10px;">流程步驟 PROCESS STEPS</label>
+      <div class="steps-list"></div>
+      <button class="btn btn-ghost btn-add-step" style="margin-top:6px;">+ 新增步驟</button>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button class="btn btn-primary btn-save-proj">儲存專案內容</button>
+    </div>
+  `;
+
+  // 語言切換
+  card.querySelectorAll('.proj-lang-tabs button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      card.querySelectorAll('.proj-lang-tabs button').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const lang = btn.dataset.l;
+      card.querySelectorAll('.lang-zh, .lang-en, .lang-ja').forEach(el=>{
+        el.style.display = el.classList.contains('lang-'+lang) ? '' : 'none';
+      });
+    });
+  });
+
+  // 縮圖上傳
+  card.querySelector('.f-thumb-file').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const url = await uploadImage(file);
+      p.thumb_image_url = url;
+      card.querySelector(`#thumbPreview-${p.id}`).innerHTML = `<img src="${esc(url)}">`;
+      showToast('圖片上傳成功，記得按「儲存專案內容」');
+    }catch(err){ showToast('上傳失敗：'+err.message, true); }
+  });
+
+  // META 列表
+  const metaList = card.querySelector('.meta-list');
+  function addMetaRow(m){
+    const row = document.createElement('div');
+    row.className = 'grid2';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `
+      <input placeholder="Label（如 CATEGORY）" class="meta-label" value="${esc(m.label_zh)}">
+      <div style="display:flex; gap:6px;">
+        <input placeholder="Value（如 Digital Strategy）" class="meta-value" value="${esc(m.value_zh)}">
+        <button class="btn btn-danger meta-del" style="padding:9px 12px;">✕</button>
+      </div>
+    `;
+    row.dataset.id = m.id || '';
+    row.querySelector('.meta-del').addEventListener('click', async ()=>{
+      if(row.dataset.id){
+        await sb.from('project_meta').delete().eq('id', row.dataset.id);
+      }
+      row.remove();
+    });
+    metaList.appendChild(row);
+  }
+  metas.forEach(addMetaRow);
+  card.querySelector('.btn-add-meta').addEventListener('click', ()=> addMetaRow({}));
+
+  // STEPS 列表
+  const stepsList = card.querySelector('.steps-list');
+  function addStepRow(s){
+    const row = document.createElement('div');
+    row.className = 'grid2';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `
+      <input placeholder="Title（如 RESEARCH）" class="step-title" value="${esc(s.title)}">
+      <div style="display:flex; gap:6px;">
+        <input placeholder="描述內容" class="step-text" value="${esc(s.text_zh)}">
+        <button class="btn btn-danger step-del" style="padding:9px 12px;">✕</button>
+      </div>
+    `;
+    row.dataset.id = s.id || '';
+    row.dataset.num = s.step_number || '';
+    row.querySelector('.step-del').addEventListener('click', async ()=>{
+      if(row.dataset.id){
+        await sb.from('project_steps').delete().eq('id', row.dataset.id);
+      }
+      row.remove();
+    });
+    stepsList.appendChild(row);
+  }
+  steps.forEach(addStepRow);
+  card.querySelector('.btn-add-step').addEventListener('click', ()=>{
+    addStepRow({ step_number: String(stepsList.children.length+1).padStart(2,'0') });
+  });
+
+  // 儲存整個專案
+  card.querySelector('.btn-save-proj').addEventListener('click', async ()=>{
+    const payload = {
+      role_zh: card.querySelector('.f-role-zh').value, role_en: card.querySelector('.f-role-en').value, role_ja: card.querySelector('.f-role-ja').value,
+      sub_zh: card.querySelector('.f-sub-zh').value, sub_en: card.querySelector('.f-sub-en').value, sub_ja: card.querySelector('.f-sub-ja').value,
+      overview_zh: card.querySelector('.f-overview-zh').value, overview_en: card.querySelector('.f-overview-en').value, overview_ja: card.querySelector('.f-overview-ja').value,
+      result_zh: card.querySelector('.f-result-zh').value, result_en: card.querySelector('.f-result-en').value, result_ja: card.querySelector('.f-result-ja').value,
+      tags: card.querySelector('.f-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
+      thumb_image_url: p.thumb_image_url || null,
+    };
+    const { error } = await sb.from('projects').update(payload).eq('id', p.id);
+    if(error){ showToast(error.message, true); return; }
+
+    // META：簡化處理，先全刪再重建（小型資料量沒問題）
+    await sb.from('project_meta').delete().eq('project_id', p.id);
+    const metaRows = [...metaList.children].map((row,i)=>({
+      project_id: p.id, sort_order: i+1,
+      label_zh: row.querySelector('.meta-label').value, label_en: row.querySelector('.meta-label').value, label_ja: row.querySelector('.meta-label').value,
+      value_zh: row.querySelector('.meta-value').value, value_en: row.querySelector('.meta-value').value, value_ja: row.querySelector('.meta-value').value,
+    })).filter(m=>m.label_zh);
+    if(metaRows.length) await sb.from('project_meta').insert(metaRows);
+
+    // STEPS：同樣全刪再重建
+    await sb.from('project_steps').delete().eq('project_id', p.id);
+    const stepRows = [...stepsList.children].map((row,i)=>({
+      project_id: p.id, sort_order: i+1, step_number: String(i+1).padStart(2,'0'),
+      title: row.querySelector('.step-title').value,
+      text_zh: row.querySelector('.step-text').value, text_en: row.querySelector('.step-text').value, text_ja: row.querySelector('.step-text').value,
+    })).filter(s=>s.title);
+    if(stepRows.length) await sb.from('project_steps').insert(stepRows);
+
+    showToast('專案已儲存');
+  });
+
+  return card;
+}
+
+/* ============================================================
+   WORKS 頁
+   ============================================================ */
+async function renderWorksPage(){
+  const root = document.getElementById('pageContent');
+  const { data: works, error } = await sb.from('works').select('*').order('sort_order');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  root.innerHTML = `
+    <div class="page-title">▸ Past Works</div>
+    <div class="page-sub">管理過去工作經歷時間軸。</div>
+    <div id="worksList"></div>
+    <button class="btn btn-ghost" id="addWorkBtn">+ 新增work經歷</button>
+  `;
+  const list = document.getElementById('worksList');
+  works.forEach(w => list.appendChild(buildWorkCard(w)));
+  document.getElementById('addWorkBtn').addEventListener('click', ()=>{
+    list.appendChild(buildWorkCard({ id:null, year_range:'', role_zh:'', role_en:'', role_ja:'', desc_zh:'', desc_en:'', desc_ja:'', sort_order: works.length+1 }));
+  });
+}
+
+function buildWorkCard(w){
+  const card = document.createElement('div');
+  card.className = 'panel';
+  card.innerHTML = `
+    <div class="grid2">
+      <div class="field"><label>年份區間</label><input class="f-yr" value="${esc(w.year_range)}" placeholder="例如 2021–2025"></div>
+      <div class="field"><label>職稱（中）</label><input class="f-role-zh" value="${esc(w.role_zh)}"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>職稱（英）</label><input class="f-role-en" value="${esc(w.role_en)}"></div>
+      <div class="field"><label>職稱（日）</label><input class="f-role-ja" value="${esc(w.role_ja)}"></div>
+    </div>
+    <div class="field"><label>描述（中）</label><textarea class="f-desc-zh">${esc(w.desc_zh)}</textarea></div>
+    <div class="field"><label>描述（英）</label><textarea class="f-desc-en">${esc(w.desc_en)}</textarea></div>
+    <div class="field"><label>描述（日）</label><textarea class="f-desc-ja">${esc(w.desc_ja)}</textarea></div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-primary btn-save">儲存</button>
+      <button class="btn btn-danger btn-delete">刪除</button>
+    </div>
+  `;
+  card.querySelector('.btn-save').addEventListener('click', async ()=>{
+    const payload = {
+      year_range: card.querySelector('.f-yr').value,
+      role_zh: card.querySelector('.f-role-zh').value, role_en: card.querySelector('.f-role-en').value, role_ja: card.querySelector('.f-role-ja').value,
+      desc_zh: card.querySelector('.f-desc-zh').value, desc_en: card.querySelector('.f-desc-en').value, desc_ja: card.querySelector('.f-desc-ja').value,
+      sort_order: w.sort_order || 0,
+    };
+    let res;
+    if(w.id){ res = await sb.from('works').update(payload).eq('id', w.id); }
+    else{ res = await sb.from('works').insert(payload).select().single(); if(res.data) w.id = res.data.id; }
+    if(res.error){ showToast(res.error.message, true); } else { showToast('已儲存'); }
+  });
+  card.querySelector('.btn-delete').addEventListener('click', async ()=>{
+    if(!confirm('確定刪除？')) return;
+    if(w.id) await sb.from('works').delete().eq('id', w.id);
+    card.remove();
+    showToast('已刪除');
+  });
+  return card;
+}
+
+/* ============================================================
+   EDUCATION 頁
+   ============================================================ */
+async function renderEducationPage(){
+  const root = document.getElementById('pageContent');
+  const { data: edus, error } = await sb.from('education').select('*').order('sort_order');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  root.innerHTML = `
+    <div class="page-title">🎓 Education</div>
+    <div class="page-sub">管理學歷資訊。</div>
+    <div id="eduListAdmin"></div>
+    <button class="btn btn-ghost" id="addEduBtn">+ 新增學歷</button>
+  `;
+  const list = document.getElementById('eduListAdmin');
+  edus.forEach(e => list.appendChild(buildEduCard(e)));
+  document.getElementById('addEduBtn').addEventListener('click', ()=>{
+    list.appendChild(buildEduCard({ id:null, school_name:'', desc_zh:'', desc_en:'', desc_ja:'', sort_order: edus.length+1 }));
+  });
+}
+
+function buildEduCard(e){
+  const card = document.createElement('div');
+  card.className = 'panel';
+  card.innerHTML = `
+    <div class="field"><label>學校名稱</label><input class="f-school" value="${esc(e.school_name)}"></div>
+    <div class="field"><label>描述（中）</label><input class="f-desc-zh" value="${esc(e.desc_zh)}"></div>
+    <div class="field"><label>描述（英）</label><input class="f-desc-en" value="${esc(e.desc_en)}"></div>
+    <div class="field"><label>描述（日）</label><input class="f-desc-ja" value="${esc(e.desc_ja)}"></div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-primary btn-save">儲存</button>
+      <button class="btn btn-danger btn-delete">刪除</button>
+    </div>
+  `;
+  card.querySelector('.btn-save').addEventListener('click', async ()=>{
+    const payload = {
+      school_name: card.querySelector('.f-school').value,
+      desc_zh: card.querySelector('.f-desc-zh').value, desc_en: card.querySelector('.f-desc-en').value, desc_ja: card.querySelector('.f-desc-ja').value,
+      sort_order: e.sort_order || 0,
+    };
+    let res;
+    if(e.id){ res = await sb.from('education').update(payload).eq('id', e.id); }
+    else{ res = await sb.from('education').insert(payload).select().single(); if(res.data) e.id = res.data.id; }
+    if(res.error){ showToast(res.error.message, true); } else { showToast('已儲存'); }
+  });
+  card.querySelector('.btn-delete').addEventListener('click', async ()=>{
+    if(!confirm('確定刪除？')) return;
+    if(e.id) await sb.from('education').delete().eq('id', e.id);
+    card.remove();
+    showToast('已刪除');
+  });
+  return card;
+}
+
+/* ============================================================
+   BIO / HERO 頁（site_meta）
+   ============================================================ */
+async function renderBioPage(){
+  const root = document.getElementById('pageContent');
+  const { data: metas, error } = await sb.from('site_meta').select('*');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  const map = {};
+  metas.forEach(m => map[m.meta_key] = m);
+
+  const fields = [
+    { key:'hero_lead', label:'Hero 自介文字' },
+    { key:'bio_paragraph_1', label:'About — Bio 第一段' },
+    { key:'bio_paragraph_2', label:'About — Bio 第二段' },
+  ];
+
+  root.innerHTML = `
+    <div class="page-title">📜 Bio / Hero 文字</div>
+    <div class="page-sub">管理首頁自介與關於我頁面的段落文字。</div>
+    <div id="bioFields"></div>
+    <button class="btn btn-primary" id="saveBioBtn" style="margin-top:10px;">儲存全部</button>
+  `;
+
+  const container = document.getElementById('bioFields');
+  fields.forEach(f=>{
+    const m = map[f.key] || { meta_key:f.key, value_zh:'', value_en:'', value_ja:'' };
+    const block = document.createElement('div');
+    block.className = 'panel';
+    block.dataset.key = f.key;
+    block.innerHTML = `
+      <div class="panel-head"><h3>${f.label}</h3></div>
+      <div class="field"><label>中文</label><textarea class="v-zh">${esc(m.value_zh)}</textarea></div>
+      <div class="field"><label>English</label><textarea class="v-en">${esc(m.value_en)}</textarea></div>
+      <div class="field"><label>日本語</label><textarea class="v-ja">${esc(m.value_ja)}</textarea></div>
+    `;
+    container.appendChild(block);
+  });
+
+  document.getElementById('saveBioBtn').addEventListener('click', async ()=>{
+    const blocks = [...container.children];
+    for(const block of blocks){
+      const payload = {
+        meta_key: block.dataset.key,
+        value_zh: block.querySelector('.v-zh').value,
+        value_en: block.querySelector('.v-en').value,
+        value_ja: block.querySelector('.v-ja').value,
+      };
+      const { error } = await sb.from('site_meta').upsert(payload, { onConflict: 'meta_key' });
+      if(error){ showToast(error.message, true); return; }
+    }
+    showToast('已全部儲存');
+  });
+}
+
+/* ---------- 小工具：HTML escape，避免使用者輸入內容破壞畫面 ---------- */
+function esc(str){
+  if(str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ---------- 初始化 ---------- */
+checkSession();
+</script>
+
+</body>
+</html>
