@@ -155,7 +155,61 @@ nav.wrap{
   position: relative;
   overflow:hidden;
 }
+
+/* ---------- HERO 動態背景：香港 8-bit cyberpunk 天際線 ---------- */
+.hero-bg{
+  position:absolute; inset:0; z-index:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.hero-bg svg{ width:100%; height:100%; display:block; }
+.hero-bg .sky-rect{ transition: fill 1.2s ease; }
+.hero-bg-fade{
+  position:absolute; inset:0;
+  background: linear-gradient(180deg, rgba(11,14,28,0.35) 0%, rgba(11,14,28,0.55) 45%, var(--bg) 96%);
+  pointer-events:none;
+}
+
+/* 星星：只在夜晚顯示，閃爍效果 */
+.hero-bg .star{ opacity:0; transition: opacity 1.2s ease; }
+.hero-bg.is-night .star{ opacity:1; animation: twinkle 2.6s ease-in-out infinite; }
+.hero-bg .star:nth-child(odd){ animation-delay: .4s; }
+.hero-bg .star:nth-child(3n){ animation-delay: 1.1s; }
+@keyframes twinkle{ 0%,100%{ opacity:0.25; } 50%{ opacity:1; } }
+
+/* 招牌霓虹燈：夜晚全亮閃爍，黃昏微亮，早晨熄滅 */
+.hero-bg .neon-sign{ transition: opacity 1.2s ease; opacity:0; }
+.hero-bg.is-morning .neon-sign{ opacity:0.08; }
+.hero-bg.is-dusk .neon-sign{ opacity:0.55; }
+.hero-bg.is-night .neon-sign{ opacity:1; animation: signFlicker 4s ease-in-out infinite; }
+.hero-bg .neon-sign:nth-child(2n){ animation-delay:.7s; }
+@keyframes signFlicker{ 0%,100%{ opacity:1; } 48%{ opacity:1; } 50%{ opacity:0.4; } 52%{ opacity:1; } 78%{ opacity:0.85; } }
+
+/* 太陽／月亮：依時段切換顯示與位置 */
+.hero-bg .celestial{ transition: opacity 1.2s ease, cy 1.2s ease, fill 1.2s ease; }
+
+/* 雲朵：緩慢飄移 */
+.hero-bg .cloud{ animation: driftCloud 60s linear infinite; opacity:0.5; }
+.hero-bg .cloud.c2{ animation-duration: 85s; animation-delay: -20s; opacity:0.35; }
+@keyframes driftCloud{ from{ transform: translateX(-10%); } to{ transform: translateX(110%); } }
+
+/* 飄浮像素粒子（螢火蟲感，夜晚較明顯） */
+.hero-bg .pixel-dot{ opacity:0.3; animation: floatDot 8s ease-in-out infinite; }
+.hero-bg.is-night .pixel-dot{ opacity:0.7; }
+@keyframes floatDot{ 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-14px); } }
+
+/* 窗戶燈光：夜晚較多亮燈 */
+.hero-bg .window{ transition: opacity 1s ease; }
+.hero-bg.is-morning .window{ opacity:0.15; }
+.hero-bg.is-dusk .window{ opacity:0.55; }
+.hero-bg.is-night .window{ opacity:0.9; }
+
+@media (prefers-reduced-motion: reduce){
+  .hero-bg .star, .hero-bg .neon-sign, .hero-bg .cloud, .hero-bg .pixel-dot{ animation:none !important; }
+}
+
 .hero-grid{
+  position:relative; z-index:1;
   display:grid;
   grid-template-columns: 1.3fr 0.9fr;
   gap: 40px;
@@ -361,6 +415,7 @@ section{ padding: 80px 0; }
 @media (max-width: 980px){ .projects-grid{ grid-template-columns: 1fr; } }
 
 .project-card{
+  display:block;
   background: var(--panel);
   cursor: pointer;
   transition: transform .18s, border-color .18s;
@@ -410,81 +465,6 @@ section{ padding: 80px 0; }
   margin-bottom: 14px;
 }
 .project-tags{ display:flex; gap:6px; flex-wrap:wrap; }
-
-/* ---------- MODAL（專案詳情）---------- */
-.modal-overlay{
-  position: fixed; inset:0;
-  background: rgba(6,8,18,0.82);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding: 24px;
-}
-.modal-overlay.open{ display:flex; }
-.modal-box{
-  background: var(--panel);
-  border: 2px solid var(--neon-cyan);
-  border-radius: 8px;
-  max-width: 760px;
-  width:100%;
-  max-height: 86vh;
-  overflow-y:auto;
-  padding: 32px;
-  position:relative;
-}
-.modal-close{
-  position:absolute; top:18px; right:18px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--ink-soft);
-  width:32px; height:32px;
-  border-radius:4px;
-  cursor:pointer;
-  font-family: var(--font-mono);
-}
-.modal-close:hover{ color: var(--neon-pink); border-color: var(--neon-pink); }
-
-.modal-tag-row{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-.modal-box h2{
-  font-family: var(--font-display);
-  font-size: 24px;
-  margin-bottom: 4px;
-}
-.modal-sub{ font-family: var(--font-mono); font-size:12px; color: var(--neon-cyan); margin-bottom:24px; }
-
-.modal-meta{
-  display:grid;
-  grid-template-columns: repeat(4,1fr);
-  gap: 16px;
-  margin-bottom: 28px;
-  padding-bottom: 24px;
-  border-bottom: 1px dashed var(--border);
-}
-@media (max-width: 600px){ .modal-meta{ grid-template-columns: repeat(2,1fr); } }
-.modal-meta-item .label{ font-family: var(--font-mono); font-size:10px; color: var(--ink-soft); margin-bottom:4px; }
-.modal-meta-item .value{ font-size: 14px; font-weight:600; }
-
-.modal-step{ display:flex; gap:16px; margin-bottom: 22px; }
-.modal-step-num{
-  font-family: var(--font-pixel);
-  font-size: 12px;
-  color: var(--neon-pink);
-  flex-shrink:0;
-  width: 36px;
-}
-.modal-step-text strong{ display:block; font-size:14px; margin-bottom:4px; }
-.modal-step-text span{ font-size: 13.5px; color: var(--ink-soft); }
-
-.modal-result{
-  margin-top: 24px;
-  background: rgba(124,242,156,0.07);
-  border: 1px solid var(--neon-green);
-  border-radius: 6px;
-  padding: 18px 20px;
-}
-.modal-result .label{ font-family: var(--font-mono); font-size:11px; color: var(--neon-green); margin-bottom:6px; }
 
 /* ---------- PAST WORKS ---------- */
 .works-grid{
@@ -562,12 +542,12 @@ footer{
       <div class="logo-sub" data-i18n="nav.level">LV.35 DESIGNER</div>
     </div>
     <div class="navlinks">
-      <a href="#top" class="active" data-i18n="nav.home">HOME</a>
-      <a href="#skills" data-i18n="nav.skills">SKILLS</a>
-      <a href="#projects" data-i18n="nav.projects">PROJECTS</a>
-      <a href="#works" data-i18n="nav.works">WORKS</a>
-      <a href="#about" data-i18n="nav.about">ABOUT</a>
-      <a href="#contact" data-i18n="nav.contact">CONTACT</a>
+      <a href="#top" class="active" data-section="top" data-i18n="nav.home">HOME</a>
+      <a href="#skills" data-section="skills" data-i18n="nav.skills">SKILLS</a>
+      <a href="#projects" data-section="projects" data-i18n="nav.projects">PROJECTS</a>
+      <a href="#works" data-section="works" data-i18n="nav.works">WORKS</a>
+      <a href="#about" data-section="about" data-i18n="nav.about">ABOUT</a>
+      <a href="#contact" data-section="contact" data-i18n="nav.contact">CONTACT</a>
     </div>
     <div class="nav-right">
       <div class="lang-switch" role="group" aria-label="Language">
@@ -584,6 +564,133 @@ footer{
 
   <!-- ============ HERO ============ -->
   <section class="hero">
+    <div class="hero-bg" id="heroBg">
+      <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop id="skyStop1" offset="0%"/>
+            <stop id="skyStop2" offset="100%"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 天空 -->
+        <rect class="sky-rect" x="0" y="0" width="1200" height="480" fill="url(#skyGrad)"/>
+
+        <!-- 星星（夜晚顯示） -->
+        <g id="starsGroup">
+          <circle class="star" cx="80" cy="40" r="1.6" fill="#fff"/>
+          <circle class="star" cx="180" cy="70" r="1.2" fill="#fff"/>
+          <circle class="star" cx="260" cy="35" r="1.8" fill="#fff"/>
+          <circle class="star" cx="340" cy="90" r="1.2" fill="#fff"/>
+          <circle class="star" cx="430" cy="50" r="1.5" fill="#fff"/>
+          <circle class="star" cx="520" cy="30" r="1.2" fill="#fff"/>
+          <circle class="star" cx="610" cy="75" r="1.6" fill="#fff"/>
+          <circle class="star" cx="700" cy="45" r="1.3" fill="#fff"/>
+          <circle class="star" cx="790" cy="85" r="1.5" fill="#fff"/>
+          <circle class="star" cx="880" cy="40" r="1.2" fill="#fff"/>
+          <circle class="star" cx="960" cy="65" r="1.7" fill="#fff"/>
+          <circle class="star" cx="1040" cy="35" r="1.3" fill="#fff"/>
+          <circle class="star" cx="1120" cy="80" r="1.5" fill="#fff"/>
+          <circle class="star" cx="150" cy="120" r="1.1" fill="#fff"/>
+          <circle class="star" cx="380" cy="130" r="1.1" fill="#fff"/>
+          <circle class="star" cx="650" cy="110" r="1.1" fill="#fff"/>
+          <circle class="star" cx="980" cy="120" r="1.1" fill="#fff"/>
+        </g>
+
+        <!-- 雲朵（8-bit 像素方塊風） -->
+        <g class="cloud" fill="#2A3060" opacity="0.5">
+          <rect x="100" y="60" width="60" height="12"/>
+          <rect x="112" y="48" width="36" height="12"/>
+        </g>
+        <g class="cloud c2" fill="#2A3060" opacity="0.35">
+          <rect x="700" y="90" width="80" height="14"/>
+          <rect x="716" y="76" width="48" height="14"/>
+        </g>
+
+        <!-- 太陽 / 月亮 -->
+        <circle id="celestialBody" class="celestial" cx="950" cy="90" r="34" fill="#FFC857"/>
+
+        <!-- 遠景建築剪影（矮、暗） -->
+        <g id="farBuildings" fill="#171B36">
+          <rect x="0" y="300" width="70" height="180"/>
+          <rect x="80" y="260" width="50" height="220"/>
+          <rect x="140" y="320" width="60" height="160"/>
+          <rect x="980" y="290" width="60" height="190"/>
+          <rect x="1050" y="250" width="55" height="230"/>
+          <rect x="1120" y="310" width="80" height="170"/>
+        </g>
+
+        <!-- 中景建築（含窗戶燈光） -->
+        <g id="midBuildings">
+          <rect x="40" y="220" width="90" height="260" fill="#1B2042"/>
+          <rect x="150" y="180" width="70" height="300" fill="#13172E"/>
+          <rect x="240" y="240" width="100" height="240" fill="#1B2042"/>
+          <rect x="850" y="200" width="80" height="280" fill="#13172E"/>
+          <rect x="940" y="230" width="90" height="250" fill="#1B2042"/>
+          <rect x="1040" y="190" width="75" height="290" fill="#13172E"/>
+          <!-- 窗戶燈光（簡化成網格方塊） -->
+          <g id="windowsGroup" fill="#FFD978">
+            <rect class="window" x="55" y="240" width="8" height="10"/>
+            <rect class="window" x="75" y="240" width="8" height="10"/>
+            <rect class="window" x="95" y="240" width="8" height="10"/>
+            <rect class="window" x="55" y="270" width="8" height="10"/>
+            <rect class="window" x="95" y="270" width="8" height="10"/>
+            <rect class="window" x="75" y="300" width="8" height="10"/>
+            <rect class="window" x="165" y="200" width="8" height="10"/>
+            <rect class="window" x="185" y="200" width="8" height="10"/>
+            <rect class="window" x="165" y="230" width="8" height="10"/>
+            <rect class="window" x="185" y="260" width="8" height="10"/>
+            <rect class="window" x="260" y="260" width="8" height="10"/>
+            <rect class="window" x="285" y="260" width="8" height="10"/>
+            <rect class="window" x="310" y="260" width="8" height="10"/>
+            <rect class="window" x="260" y="300" width="8" height="10"/>
+            <rect class="window" x="310" y="300" width="8" height="10"/>
+            <rect class="window" x="870" y="220" width="8" height="10"/>
+            <rect class="window" x="895" y="220" width="8" height="10"/>
+            <rect class="window" x="870" y="260" width="8" height="10"/>
+            <rect class="window" x="895" y="300" width="8" height="10"/>
+            <rect class="window" x="960" y="250" width="8" height="10"/>
+            <rect class="window" x="985" y="250" width="8" height="10"/>
+            <rect class="window" x="1010" y="250" width="8" height="10"/>
+            <rect class="window" x="960" y="290" width="8" height="10"/>
+            <rect class="window" x="1010" y="320" width="8" height="10"/>
+            <rect class="window" x="1060" y="210" width="8" height="10"/>
+            <rect class="window" x="1080" y="210" width="8" height="10"/>
+            <rect class="window" x="1060" y="250" width="8" height="10"/>
+            <rect class="window" x="1080" y="290" width="8" height="10"/>
+          </g>
+        </g>
+
+        <!-- 前景建築（最深、最近） -->
+        <g id="nearBuildings" fill="#0E1124">
+          <rect x="0" y="380" width="180" height="100"/>
+          <rect x="1000" y="360" width="200" height="120"/>
+        </g>
+
+        <!-- 霓虹招牌（cyberpunk 主元素） -->
+        <g id="neonSignsGroup">
+          <rect class="neon-sign" x="170" y="195" width="44" height="11" fill="var(--neon-pink)"/>
+          <rect class="neon-sign" x="270" y="255" width="36" height="9" fill="var(--neon-cyan)"/>
+          <rect class="neon-sign" x="60" y="255" width="30" height="9" fill="var(--neon-purple)"/>
+          <rect class="neon-sign" x="865" y="235" width="38" height="9" fill="var(--neon-cyan)"/>
+          <rect class="neon-sign" x="965" y="270" width="34" height="9" fill="var(--neon-pink)"/>
+          <rect class="neon-sign" x="1055" y="225" width="40" height="9" fill="var(--neon-purple)"/>
+        </g>
+
+        <!-- 飄浮像素粒子 -->
+        <g id="pixelDotsGroup" fill="var(--neon-cyan)">
+          <rect class="pixel-dot" x="320" y="340" width="3" height="3"/>
+          <rect class="pixel-dot" x="500" y="380" width="3" height="3"/>
+          <rect class="pixel-dot" x="700" y="350" width="3" height="3"/>
+          <rect class="pixel-dot" x="420" y="400" width="3" height="3"/>
+          <rect class="pixel-dot" x="600" y="420" width="3" height="3"/>
+        </g>
+
+        <!-- 地面 -->
+        <rect x="0" y="478" width="1200" height="2" fill="var(--border)" opacity="0.6"/>
+      </svg>
+      <div class="hero-bg-fade"></div>
+    </div>
     <div class="wrap">
       <div class="hero-grid">
         <div class="fade-in">
@@ -707,13 +814,7 @@ footer{
   <div class="wrap" data-i18n="footer.text">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
 </footer>
 
-<!-- ============ MODAL：專案詳情 ============ -->
-<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box" id="modalBox">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <!-- 內容由 JS 動態填入 -->
-  </div>
-</div>
+
 
 <script>
 /* ============================================================
@@ -1070,7 +1171,7 @@ function renderSkills(){
 function renderProjects(){
   const grid = document.getElementById('projectsGrid');
   grid.innerHTML = DATA.projects.map((p,i)=>`
-    <div class="project-card pixel-border" tabindex="0" onclick="openModal('${p.key}')" onkeydown="if(event.key==='Enter')openModal('${p.key}')">
+    <a href="project.html?key=${encodeURIComponent(p.key)}" class="project-card pixel-border">
       <div class="project-thumb" style="background:${p.thumbGradient};">
         ${p.hasImage ? '' : p.title}
         <span class="ctv">${t('project.clickToView')}</span>
@@ -1081,7 +1182,7 @@ function renderProjects(){
         <div class="project-role">${L(p.role)}</div>
         <div class="project-tags">${p.tags.map(tag=>`<span class="skill-tag">${tag}</span>`).join('')}</div>
       </div>
-    </div>
+    </a>
   `).join('');
 }
 
@@ -1138,45 +1239,99 @@ function refreshObserver(){
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 }
 
-/* ---------- Modal ---------- */
-function openModal(key){
-  const d = DATA.projects.find(p=>p.key===key);
-  if(!d) return;
-  const box = document.getElementById('modalBox');
-  box.innerHTML = `
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-tag-row">${d.tags.map(tg=>`<span class="skill-tag">${tg}</span>`).join('')}</div>
-    <h2>${d.title}</h2>
-    <div class="modal-sub">${L(d.sub)}</div>
-    <div class="modal-meta">
-      ${d.meta.map(m=>`<div class="modal-meta-item"><div class="label">${L(m.label)}</div><div class="value">${L(m.value)}</div></div>`).join('')}
-    </div>
-    <p style="color:var(--ink-soft); font-size:14px; margin-bottom:24px; line-height:1.8;">${L(d.overview)}</p>
-    ${d.steps.map(s=>`
-      <div class="modal-step">
-        <div class="modal-step-num">${s.n}</div>
-        <div class="modal-step-text"><strong>${s.title}</strong><span>${L(s.text)}</span></div>
-      </div>
-    `).join('')}
-    <div class="modal-result">
-      <div class="label">${t('modal.result')}</div>
-      <div style="font-size:14px;">${L(d.result)}</div>
-    </div>
-  `;
-  document.getElementById('modalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+/* ---------- nav active 狀態：捲動時自動偵測目前所在區塊 ---------- */
+const navLinks = [...document.querySelectorAll('.navlinks a')];
+const sectionIds = ['skills','projects','works','about','contact'];
+const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
+
+function setActiveNav(sectionKey){
+  navLinks.forEach(a => a.classList.toggle('active', a.dataset.section === sectionKey));
 }
-function closeModal(){
-  document.getElementById('modalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
+
+const navObserver = new IntersectionObserver((entries) => {
+  // 找出目前最靠近畫面頂端、且正在可視範圍內的 section
+  const visible = entries.filter(e => e.isIntersecting);
+  if(visible.length === 0) return;
+  visible.sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+  setActiveNav(visible[0].target.id);
+}, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
+
+function initNavSpy(){
+  sectionEls.forEach(el => navObserver.observe(el));
+  // 捲到最頂端（hero 區）時，強制標示 HOME
+  window.addEventListener('scroll', ()=>{
+    if(window.scrollY < 80) setActiveNav('top');
+  }, { passive:true });
 }
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+
+// 點擊時立即切換（不用等捲動完成才反應）
+navLinks.forEach(a=>{
+  a.addEventListener('click', ()=> setActiveNav(a.dataset.section));
+});
+
+/* ============================================================
+   HERO 背景：依香港當地時間切換 早晨／黃昏／夜晚
+   早晨 06:00–16:59　黃昏 17:00–18:59　夜晚 19:00–05:59
+   ============================================================ */
+function getHongKongHour(){
+  // 用 Intl 取得香港時區的「當前小時」，不受使用者裝置時區影響
+  const hkTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong', hour: 'numeric', hour12:false });
+  return parseInt(hkTimeStr, 10);
+}
+
+const TIME_THEMES = {
+  morning: {
+    sky1: '#7FB8D9', sky2: '#C9E4F0',
+    celestial: { fill:'#FFE9A8', cy:90, opacity:0.9 },
+    farFill:'#3A5470', midColors:['#3A5470','#2E4660'], nearFill:'#243B52',
+  },
+  dusk: {
+    sky1: '#3B2A5C', sky2: '#E08A4D',
+    celestial: { fill:'#FF8C5A', cy:120, opacity:1 },
+    farFill:'#241B3F', midColors:['#241B3F','#1B1530'], nearFill:'#140F26',
+  },
+  night: {
+    sky1: '#0B0E1C', sky2: '#1B1640',
+    celestial: { fill:'#E8E9F5', cy:60, opacity:1 },
+    farFill:'#171B36', midColors:['#1B2042','#13172E'], nearFill:'#0E1124',
+  },
+};
+
+function applyHeroTimeOfDay(){
+  const hour = getHongKongHour();
+  let phase = 'night';
+  if(hour >= 6 && hour < 17) phase = 'morning';
+  else if(hour >= 17 && hour < 19) phase = 'dusk';
+  else phase = 'night';
+
+  const bg = document.getElementById('heroBg');
+  bg.classList.remove('is-morning','is-dusk','is-night');
+  bg.classList.add('is-' + phase);
+
+  const theme = TIME_THEMES[phase];
+  document.getElementById('skyStop1').setAttribute('stop-color', theme.sky1);
+  document.getElementById('skyStop2').setAttribute('stop-color', theme.sky2);
+
+  const body = document.getElementById('celestialBody');
+  body.setAttribute('fill', theme.celestial.fill);
+  body.setAttribute('cy', theme.celestial.cy);
+  body.style.opacity = theme.celestial.opacity;
+
+  document.getElementById('farBuildings').setAttribute('fill', theme.farFill);
+  const midRects = document.getElementById('midBuildings').querySelectorAll('rect:not(.window)');
+  midRects.forEach((r,i) => r.setAttribute('fill', theme.midColors[i % 2]));
+  document.getElementById('nearBuildings').setAttribute('fill', theme.nearFill);
+}
 
 /* ---------- 初始化 ---------- */
 (async function init(){
   DATA = await loadDataFromSupabase();
   renderAll();
   refreshObserver();
+  initNavSpy();
+  applyHeroTimeOfDay();
+  // 每 10 分鐘重新檢查一次時段，網站開著跨時段時會自動更新
+  setInterval(applyHeroTimeOfDay, 10 * 60 * 1000);
 })();
 </script>
 

@@ -412,8 +412,18 @@ function buildProjectCard(p, metas, steps){
         ${p.thumb_image_url ? `<img src="${esc(p.thumb_image_url)}">` : '無圖'}
       </div>
       <div style="flex:1;">
-        <label>專案縮圖（上傳後自動取代漸層底色）</label>
+        <label>專案縮圖（卡片用，上傳後自動取代漸層底色）</label>
         <input type="file" accept="image/*" class="f-thumb-file">
+      </div>
+    </div>
+
+    <div class="img-upload">
+      <div class="img-preview" id="heroPreview-${p.id}">
+        ${p.hero_image_url ? `<img src="${esc(p.hero_image_url)}">` : '無圖'}
+      </div>
+      <div style="flex:1;">
+        <label>Hero 大圖（專案詳情頁頂部主視覺，沒設定則用縮圖代替）</label>
+        <input type="file" accept="image/*" class="f-hero-file">
       </div>
     </div>
 
@@ -492,6 +502,18 @@ function buildProjectCard(p, metas, steps){
     }catch(err){ showToast('上傳失敗：'+err.message, true); }
   });
 
+  // Hero 大圖上傳
+  card.querySelector('.f-hero-file').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const url = await uploadImage(file);
+      p.hero_image_url = url;
+      card.querySelector(`#heroPreview-${p.id}`).innerHTML = `<img src="${esc(url)}">`;
+      showToast('圖片上傳成功，記得按「儲存專案內容」');
+    }catch(err){ showToast('上傳失敗：'+err.message, true); }
+  });
+
   // META 列表
   const metaList = card.querySelector('.meta-list');
   function addMetaRow(m){
@@ -521,13 +543,27 @@ function buildProjectCard(p, metas, steps){
   const stepsList = card.querySelector('.steps-list');
   function addStepRow(s){
     const row = document.createElement('div');
-    row.className = 'grid2';
-    row.style.marginBottom = '8px';
+    row.style.marginBottom = '14px';
+    row.style.padding = '12px';
+    row.style.border = '1px dashed var(--border)';
+    row.style.borderRadius = '6px';
+    row.dataset.imageUrl = s.image_url || '';
     row.innerHTML = `
-      <input placeholder="Title（如 RESEARCH）" class="step-title" value="${esc(s.title)}">
-      <div style="display:flex; gap:6px;">
-        <input placeholder="描述內容" class="step-text" value="${esc(s.text_zh)}">
-        <button class="btn btn-danger step-del" style="padding:9px 12px;">✕</button>
+      <div class="grid2" style="margin-bottom:8px;">
+        <input placeholder="Title（如 RESEARCH）" class="step-title" value="${esc(s.title)}">
+        <div style="display:flex; gap:6px;">
+          <input placeholder="描述內容" class="step-text" value="${esc(s.text_zh)}">
+          <button class="btn btn-danger step-del" style="padding:9px 12px;">✕</button>
+        </div>
+      </div>
+      <div class="img-upload" style="margin-bottom:0;">
+        <div class="img-preview step-img-preview">
+          ${s.image_url ? `<img src="${esc(s.image_url)}">` : '無圖'}
+        </div>
+        <div style="flex:1;">
+          <label>步驟示意圖（展示設計過程，吸引人觀看）</label>
+          <input type="file" accept="image/*" class="step-img-file">
+        </div>
       </div>
     `;
     row.dataset.id = s.id || '';
@@ -537,6 +573,16 @@ function buildProjectCard(p, metas, steps){
         await sb.from('project_steps').delete().eq('id', row.dataset.id);
       }
       row.remove();
+    });
+    row.querySelector('.step-img-file').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      try{
+        const url = await uploadImage(file);
+        row.dataset.imageUrl = url;
+        row.querySelector('.step-img-preview').innerHTML = `<img src="${esc(url)}">`;
+        showToast('圖片上傳成功，記得按「儲存專案內容」');
+      }catch(err){ showToast('上傳失敗：'+err.message, true); }
     });
     stepsList.appendChild(row);
   }
@@ -554,6 +600,7 @@ function buildProjectCard(p, metas, steps){
       result_zh: card.querySelector('.f-result-zh').value, result_en: card.querySelector('.f-result-en').value, result_ja: card.querySelector('.f-result-ja').value,
       tags: card.querySelector('.f-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
       thumb_image_url: p.thumb_image_url || null,
+      hero_image_url: p.hero_image_url || null,
     };
     const { error } = await sb.from('projects').update(payload).eq('id', p.id);
     if(error){ showToast(error.message, true); return; }
@@ -567,12 +614,13 @@ function buildProjectCard(p, metas, steps){
     })).filter(m=>m.label_zh);
     if(metaRows.length) await sb.from('project_meta').insert(metaRows);
 
-    // STEPS：同樣全刪再重建
+    // STEPS：同樣全刪再重建，含圖片網址
     await sb.from('project_steps').delete().eq('project_id', p.id);
     const stepRows = [...stepsList.children].map((row,i)=>({
       project_id: p.id, sort_order: i+1, step_number: String(i+1).padStart(2,'0'),
       title: row.querySelector('.step-title').value,
       text_zh: row.querySelector('.step-text').value, text_en: row.querySelector('.step-text').value, text_ja: row.querySelector('.step-text').value,
+      image_url: row.dataset.imageUrl || null,
     })).filter(s=>s.title);
     if(stepRows.length) await sb.from('project_steps').insert(stepRows);
 

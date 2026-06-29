@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project | Wing Lee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:        #0B0E1C;
+  --bg-deep:   #060812;
+  --panel:     #131730;
+  --panel-2:   #1B2042;
+  --border:    #2A3060;
+  --ink:       #E8E9F5;
+  --ink-soft:  #9498BE;
+
+  --neon-pink: #FF6FD8;
+  --neon-cyan: #4DD8E8;
+  --neon-gold: #FFC857;
+  --neon-green:#7CF29C;
+  --neon-purple:#A78BFA;
+
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-display: 'Silkscreen', monospace;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --maxw: 880px;
+}
+
+*{ box-sizing: border-box; margin:0; padding:0; }
+html{ scroll-behavior: smooth; }
+body{
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(circle at 15% 8%, rgba(167,139,250,0.10), transparent 40%),
+    radial-gradient(circle at 85% 3%, rgba(77,216,232,0.08), transparent 35%);
+}
+a{ color: inherit; text-decoration: none; }
+img{ max-width:100%; display:block; }
+::selection{ background: var(--neon-pink); color: #0B0E1C; }
+
+.wrap{ max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
+
+.pixel-border{
+  border: 2px solid var(--border);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 8px 24px rgba(0,0,0,0.35);
+  border-radius: 6px;
+}
+
+/* ---------- NAV ---------- */
+header{
+  position: sticky; top:0; z-index: 100;
+  background: rgba(11,14,28,0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--border);
+}
+nav.wrap{ display:flex; align-items:center; justify-content:space-between; height: 78px; }
+.logo-block{ line-height:1.3; }
+.logo{ font-family: var(--font-pixel); font-size: 16px; }
+.logo-sub{ font-family: var(--font-mono); font-size: 11px; color: var(--neon-cyan); letter-spacing: 0.08em; margin-top: 4px; }
+.back-link{
+  font-family: var(--font-mono); font-size: 13px; color: var(--ink-soft);
+  display:flex; align-items:center; gap:8px; transition: color .15s;
+}
+.back-link:hover{ color: var(--neon-cyan); }
+.nav-right{ display:flex; align-items:center; gap:16px; }
+.lang-switch{ display:flex; gap: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 3px; font-family: var(--font-mono); }
+.lang-switch button{ background:none; border:none; color: var(--ink-soft); font-family: var(--font-mono); font-size: 12px; padding: 5px 10px; border-radius: 3px; cursor:pointer; transition: all .15s; }
+.lang-switch button.active{ background: var(--neon-cyan); color: #061018; }
+.lang-switch button:hover:not(.active){ color: var(--ink); }
+
+/* ---------- HERO ---------- */
+.proj-hero{ padding: 56px 0 36px; }
+.proj-tags{ display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.tag{
+  font-family: var(--font-mono); font-size: 11px; color: var(--neon-pink);
+  background: rgba(255,111,216,0.10); border: 1px solid #4A2E50;
+  border-radius: 100px; padding: 4px 12px;
+}
+.proj-hero h1{
+  font-family: var(--font-pixel);
+  font-size: clamp(24px, 4vw, 38px);
+  margin-bottom: 14px;
+  line-height:1.4;
+}
+.proj-sub{ font-family: var(--font-mono); font-size: 13px; color: var(--neon-cyan); }
+
+.hero-image{
+  margin-top: 32px;
+  aspect-ratio: 16/8;
+  border-radius: 8px;
+  overflow:hidden;
+  background: linear-gradient(135deg, var(--panel-2), var(--bg-deep));
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-mono); font-size:12px; color: var(--ink-soft);
+}
+.hero-image img{ width:100%; height:100%; object-fit:cover; }
+
+/* ---------- META ---------- */
+.meta-row{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 28px 0;
+  margin: 32px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+@media (max-width: 640px){ .meta-row{ grid-template-columns: repeat(2,1fr); } }
+.meta-item .label{ font-family: var(--font-mono); font-size:11px; color: var(--ink-soft); margin-bottom:6px; letter-spacing:0.04em; }
+.meta-item .value{ font-size: 15px; font-weight:600; }
+
+/* ---------- OVERVIEW ---------- */
+.overview{ font-size: 16px; color: var(--ink-soft); line-height:1.85; margin-bottom: 48px; }
+
+/* ---------- PROCESS STEPS ---------- */
+.section-label{
+  font-family: var(--font-mono); font-size:12px; color: var(--neon-gold);
+  letter-spacing:0.06em; margin-bottom: 28px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-label .ln{ flex:1; height:1px; background: var(--border); }
+
+.step{
+  display:grid;
+  grid-template-columns: 56px 1fr;
+  gap: 20px;
+  margin-bottom: 44px;
+}
+.step-num{
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--neon-pink);
+}
+.step-body h3{
+  font-family: var(--font-display);
+  font-size: 17px;
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+.step-body p{ color: var(--ink-soft); font-size: 14.5px; margin-bottom: 16px; }
+.step-image{
+  border-radius: 6px;
+  overflow:hidden;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  aspect-ratio: 16/9;
+  max-width: 560px;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-mono); font-size:11px; color: var(--ink-soft);
+}
+.step-image img{ width:100%; height:100%; object-fit:cover; }
+
+/* ---------- RESULT ---------- */
+.result-box{
+  margin-top: 16px;
+  background: rgba(124,242,156,0.07);
+  border: 1px solid var(--neon-green);
+  border-radius: 8px;
+  padding: 28px 30px;
+}
+.result-box .label{ font-family: var(--font-mono); font-size:12px; color: var(--neon-green); margin-bottom:10px; letter-spacing:0.05em; }
+.result-box .text{ font-size: 15.5px; }
+
+/* ---------- NAV BETWEEN PROJECTS ---------- */
+.proj-nav{
+  display:flex; justify-content:space-between; gap:16px;
+  margin: 64px 0 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+.proj-nav a{
+  flex:1;
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding: 18px 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  transition: border-color .15s;
+}
+.proj-nav a:hover{ border-color: var(--neon-cyan); color: var(--ink); }
+.proj-nav a.next{ text-align:right; }
+.proj-nav .pname{ display:block; font-size:14px; color: var(--ink); margin-top:6px; font-family: var(--font-body); font-weight:600; }
+
+footer{
+  padding: 32px 0;
+  text-align:center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  border-top: 2px solid var(--border);
+}
+
+.loading-state, .error-state{ padding: 80px 0; text-align:center; color: var(--ink-soft); font-family: var(--font-mono); font-size:13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="wrap">
+    <div class="logo-block">
+      <div class="logo">WING LEE</div>
+      <div class="logo-sub">LV.35 DESIGNER</div>
+    </div>
+    <a href="index.html#projects" class="back-link">← <span data-i18n="back">BACK TO QUESTS</span></a>
+    <div class="nav-right">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button data-lang="zh" class="active">中</button>
+        <button data-lang="en">EN</button>
+        <button data-lang="ja">日</button>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap" id="projectRoot">
+  <div class="loading-state">LOADING...</div>
+</main>
+
+<footer>
+  <div class="wrap">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://rgcxzhhmqoyqhlmavqll.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_4nbpaqecLZQ7ddgLSEJrYQ_X3-CYmZ0';
+
+const i18nStatic = {
+  zh: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'找不到這個專案。', prev:'← 上一個', next:'下一個 →' },
+  en: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'Project not found.', prev:'← PREV', next:'NEXT →' },
+  ja: { back:'クエスト一覧へ', resultLabel:'★ 主な成果', notFound:'プロジェクトが見つかりません。', prev:'← 前へ', next:'次へ →' },
+};
+
+let currentLang = 'zh';
+let allProjects = [];
+let currentProject = null;
+
+function t(key){ return i18nStatic[currentLang][key] || i18nStatic.zh[key] || key; }
+function L(field){
+  if(field == null) return '';
+  if(typeof field === 'string') return field;
+  return field[currentLang] || field.zh || '';
+}
+function esc(str){
+  if(str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function sbFetch(table, query=''){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+    headers:{ apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+  });
+  if(!res.ok) throw new Error(`${table} fetch failed: ${res.status}`);
+  return res.json();
+}
+
+function getKeyFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  return params.get('key');
+}
+
+async function loadProject(key){
+  const root = document.getElementById('projectRoot');
+  try{
+    const projectsRaw = await sbFetch('projects', 'select=*&order=sort_order');
+    allProjects = projectsRaw;
+    const p = projectsRaw.find(pr => pr.key === key);
+    if(!p){
+      root.innerHTML = `<div class="error-state">${t('notFound')}</div>`;
+      return;
+    }
+    const [metas, steps] = await Promise.all([
+      sbFetch('project_meta', `select=*&project_id=eq.${p.id}&order=sort_order`),
+      sbFetch('project_steps', `select=*&project_id=eq.${p.id}&order=sort_order`),
+    ]);
+    currentProject = { ...p, metas, steps };
+    render();
+  }catch(e){
+    console.error(e);
+    root.innerHTML = `<div class="error-state">讀取失敗，請稍後再試。<br>${esc(e.message)}</div>`;
+  }
+}
+
+function render(){
+  const p = currentProject;
+  if(!p) return;
+  const root = document.getElementById('projectRoot');
+
+  const idx = allProjects.findIndex(x => x.key === p.key);
+  const prevP = allProjects[(idx - 1 + allProjects.length) % allProjects.length];
+  const nextP = allProjects[(idx + 1) % allProjects.length];
+
+  root.innerHTML = `
+    <section class="proj-hero">
+      <div class="proj-tags">${(p.tags||[]).map(tg=>`<span class="tag">${esc(tg)}</span>`).join('')}</div>
+      <h1>${esc(p.title)}</h1>
+      <div class="proj-sub">${esc(L({zh:p.sub_zh, en:p.sub_en, ja:p.sub_ja}))}</div>
+
+      <div class="hero-image">
+        ${p.hero_image_url ? `<img src="${esc(p.hero_image_url)}">` : (p.thumb_image_url ? `<img src="${esc(p.thumb_image_url)}">` : 'NO IMAGE YET')}
+      </div>
+    </section>
+
+    <div class="meta-row">
+      ${(p.metas||[]).map(m=>`
+        <div class="meta-item">
+          <div class="label">${esc(L({zh:m.label_zh, en:m.label_en, ja:m.label_ja}))}</div>
+          <div class="value">${esc(L({zh:m.value_zh, en:m.value_en, ja:m.value_ja}))}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <p class="overview">${esc(L({zh:p.overview_zh, en:p.overview_en, ja:p.overview_ja}))}</p>
+
+    <div class="section-label">PROCESS<span class="ln"></span></div>
+
+    ${(p.steps||[]).map(s=>`
+      <div class="step">
+        <div class="step-num">${esc(s.step_number||'')}</div>
+        <div class="step-body">
+          <h3>${esc(s.title||'')}</h3>
+          <p>${esc(L({zh:s.text_zh, en:s.text_en, ja:s.text_ja}))}</p>
+          ${s.image_url ? `<div class="step-image"><img src="${esc(s.image_url)}"></div>` : ''}
+        </div>
+      </div>
+    `).join('')}
+
+    <div class="result-box">
+      <div class="label">${t('resultLabel')}</div>
+      <div class="text">${esc(L({zh:p.result_zh, en:p.result_en, ja:p.result_ja}))}</div>
+    </div>
+
+    <div class="proj-nav">
+      <a href="project.html?key=${prevP.key}" class="prev">
+        ${t('prev')}
+        <span class="pname">${esc(prevP.title)}</span>
+      </a>
+      <a href="project.html?key=${nextP.key}" class="next">
+        ${t('next')}
+        <span class="pname">${esc(nextP.title)}</span>
+      </a>
+    </div>
+  `;
+}
+
+document.querySelectorAll('.lang-switch button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    currentLang = btn.dataset.lang;
+    document.querySelectorAll('.lang-switch button').forEach(b=>b.classList.toggle('active', b===btn));
+    render();
+  });
+});
+
+(function init(){
+  const key = getKeyFromURL();
+  if(!key){
+    document.getElementById('projectRoot').innerHTML = `<div class="error-state">${t('notFound')}</div>`;
+    return;
+  }
+  loadProject(key);
+})();
+</script>
+
+</body>
+</html>
