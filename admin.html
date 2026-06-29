@@ -176,6 +176,7 @@ label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var
       </div>
       <nav>
         <a data-page="skills" class="active">⚡ Skills</a>
+        <a data-page="herostats">🧑 Hero Profile</a>
         <a data-page="projects">★ Main Quests</a>
         <a data-page="works">▸ Past Works</a>
         <a data-page="education">🎓 Education</a>
@@ -293,6 +294,7 @@ async function renderPage(page){
   const root = document.getElementById('pageContent');
   root.innerHTML = `<div class="empty-state"><div class="spinner" style="margin:0 auto 12px;"></div>Loading...</div>`;
   if(page === 'skills') return renderSkillsPage();
+  if(page === 'herostats') return renderHeroStatsPage();
   if(page === 'projects') return renderProjectsPage();
   if(page === 'works') return renderWorksPage();
   if(page === 'education') return renderEducationPage();
@@ -746,6 +748,81 @@ function buildEduCard(e){
     showToast('已刪除');
   });
   return card;
+}
+
+
+/* ============================================================
+   HERO PROFILE / PLAYER STATS 頁（site_meta）
+   可修改首頁右邊 Player Stats：LV、EXP、Creativity、Strategy、Marketing
+   ============================================================ */
+async function renderHeroStatsPage(){
+  const root = document.getElementById('pageContent');
+  const { data: metas, error } = await sb.from('site_meta').select('*');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  const map = {};
+  metas.forEach(m => map[m.meta_key] = m);
+  const get = (key, fallback='') => map[key]?.value_zh || fallback;
+
+  root.innerHTML = `
+    <div class="page-title">🧑 Hero Profile</div>
+    <div class="page-sub">管理首頁 Hero 右邊的 PLAYER STATS。數值建議不要太高，見工網站會更自然可信。Percent 會控制進度條長度，Label 會顯示在右邊文字。</div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Basic Player Info</h3>
+        <span class="tag">Hero Stats Card</span>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Level 顯示文字</label><input id="heroLevel" value="${esc(get('hero_level','LV.35'))}" placeholder="例如 LV.28"></div>
+        <div class="field"><label>Stats 標題</label><input id="heroStatsTitle" value="${esc(get('hero_stats_title','★ PLAYER STATS'))}" placeholder="例如 ★ PLAYER STATS"></div>
+      </div>
+      <div class="field"><label>Next Level 文字</label><input id="heroNextLevel" value="${esc(get('hero_next_level','▸ NEXT LEVEL: New adventures await!'))}" placeholder="例如 ▸ NEXT LEVEL: Ready for new challenges!"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>EXP</h3><span class="tag">Experience Bar</span></div>
+      <div class="grid2">
+        <div class="field"><label>EXP 右邊文字</label><input id="heroExpLabel" value="${esc(get('hero_exp_label','10 年經驗'))}" placeholder="例如 10 years experience"></div>
+        <div class="field"><label>EXP 進度條 Percent（0–100）</label><input id="heroExpValue" type="number" min="0" max="100" value="${esc(get('hero_exp_value','76'))}"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>能力值</h3><span class="tag">0–100</span></div>
+      <div class="grid3">
+        <div class="field"><label>Creativity 數值</label><input id="heroCreativity" type="number" min="0" max="100" value="${esc(get('hero_creativity_value','95'))}"></div>
+        <div class="field"><label>Strategy 數值</label><input id="heroStrategy" type="number" min="0" max="100" value="${esc(get('hero_strategy_value','88'))}"></div>
+        <div class="field"><label>Marketing 數值</label><input id="heroMarketing" type="number" min="0" max="100" value="${esc(get('hero_marketing_value','90'))}"></div>
+      </div>
+      <div class="tags-input-hint">例如想感覺謙虛一點，可以改成 Creativity 88、Strategy 78、Marketing 72。</div>
+    </div>
+
+    <button class="btn btn-primary" id="saveHeroStatsBtn">儲存 Hero Profile</button>
+  `;
+
+  document.getElementById('saveHeroStatsBtn').addEventListener('click', async ()=>{
+    const rows = [
+      ['hero_level', document.getElementById('heroLevel').value],
+      ['hero_stats_title', document.getElementById('heroStatsTitle').value],
+      ['hero_next_level', document.getElementById('heroNextLevel').value],
+      ['hero_exp_label', document.getElementById('heroExpLabel').value],
+      ['hero_exp_value', clampPercent(document.getElementById('heroExpValue').value)],
+      ['hero_creativity_value', clampPercent(document.getElementById('heroCreativity').value)],
+      ['hero_strategy_value', clampPercent(document.getElementById('heroStrategy').value)],
+      ['hero_marketing_value', clampPercent(document.getElementById('heroMarketing').value)],
+    ].map(([meta_key, value])=>({ meta_key, value_zh:String(value), value_en:String(value), value_ja:String(value) }));
+
+    const { error } = await sb.from('site_meta').upsert(rows, { onConflict:'meta_key' });
+    if(error){ showToast(error.message, true); return; }
+    showToast('Hero Profile 已儲存');
+  });
+}
+
+function clampPercent(value){
+  const n = Number(value);
+  if(Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 /* ============================================================

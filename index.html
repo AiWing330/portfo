@@ -556,27 +556,27 @@ footer{
         </div>
 
         <div class="stats-card pixel-border fade-in">
-          <div class="stats-head" data-i18n="hero.statsTitle">★ PLAYER STATS</div>
-          <div class="stats-lv">LV.35</div>
+          <div class="stats-head" id="heroStatsTitle" data-i18n="hero.statsTitle">★ PLAYER STATS</div>
+          <div class="stats-lv" id="heroLevel">LV.35</div>
 
           <div class="bar-row">
-            <div class="bar-label"><span>EXP</span><span data-i18n="hero.exp">10 年經驗</span></div>
-            <div class="bar-track"><div class="bar-fill exp"></div></div>
+            <div class="bar-label"><span>EXP</span><span id="heroExpLabel" data-i18n="hero.exp">10 年經驗</span></div>
+            <div class="bar-track"><div class="bar-fill exp" id="heroExpFill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>CREATIVITY</span><span>95/100</span></div>
-            <div class="bar-track"><div class="bar-fill creativity"></div></div>
+            <div class="bar-label"><span>CREATIVITY</span><span id="heroCreativityLabel">95/100</span></div>
+            <div class="bar-track"><div class="bar-fill creativity" id="heroCreativityFill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>STRATEGY</span><span>88/100</span></div>
-            <div class="bar-track"><div class="bar-fill strategy"></div></div>
+            <div class="bar-label"><span>STRATEGY</span><span id="heroStrategyLabel">88/100</span></div>
+            <div class="bar-track"><div class="bar-fill strategy" id="heroStrategyFill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>MARKETING</span><span>90/100</span></div>
-            <div class="bar-track"><div class="bar-fill marketing"></div></div>
+            <div class="bar-label"><span>MARKETING</span><span id="heroMarketingLabel">90/100</span></div>
+            <div class="bar-track"><div class="bar-fill marketing" id="heroMarketingFill"></div></div>
           </div>
 
-          <div class="stats-foot" data-i18n="hero.nextLevel">▸ NEXT LEVEL: New adventures await!</div>
+          <div class="stats-foot" id="heroNextLevel" data-i18n="hero.nextLevel">▸ NEXT LEVEL: New adventures await!</div>
         </div>
       </div>
     </div>
@@ -972,6 +972,16 @@ async function loadDataFromSupabase(){
         dusk: metaMap.hero_bg_dusk?.value_zh || '',
         night: metaMap.hero_bg_night?.value_zh || '',
       },
+      heroStats: {
+        level: metaMap.hero_level?.value_zh || 'LV.35',
+        title: metaMap.hero_stats_title?.value_zh || null,
+        nextLevel: metaMap.hero_next_level?.value_zh || null,
+        expLabel: metaMap.hero_exp_label?.value_zh || null,
+        expValue: Number(metaMap.hero_exp_value?.value_zh || 76),
+        creativity: Number(metaMap.hero_creativity_value?.value_zh || 95),
+        strategy: Number(metaMap.hero_strategy_value?.value_zh || 88),
+        marketing: Number(metaMap.hero_marketing_value?.value_zh || 90),
+      },
     };
   }catch(e){
     console.error('Supabase fetch failed, falling back to local data', e);
@@ -1063,6 +1073,36 @@ function renderAbout(){
   ).join('');
 }
 
+
+/* ---------- 渲染 Hero 右邊 Player Stats ---------- */
+function renderHeroStats(){
+  const stats = DATA.heroStats || {
+    level:'LV.35', title:null, nextLevel:null, expLabel:null,
+    expValue:76, creativity:95, strategy:88, marketing:90
+  };
+  const clamp = v => Math.max(0, Math.min(100, Number(v) || 0));
+  const setText = (id, text) => { const el = document.getElementById(id); if(el && text != null) el.textContent = text; };
+  const setBar = (fillId, labelId, value) => {
+    const v = clamp(value);
+    const fill = document.getElementById(fillId);
+    const label = document.getElementById(labelId);
+    if(fill) fill.style.width = v + '%';
+    if(label) label.textContent = v + '/100';
+  };
+
+  setText('heroLevel', stats.level || 'LV.35');
+  if(stats.title) setText('heroStatsTitle', stats.title);
+  if(stats.expLabel) setText('heroExpLabel', stats.expLabel);
+  if(stats.nextLevel) setText('heroNextLevel', stats.nextLevel);
+
+  const exp = clamp(stats.expValue);
+  const expFill = document.getElementById('heroExpFill');
+  if(expFill) expFill.style.width = exp + '%';
+  setBar('heroCreativityFill', 'heroCreativityLabel', stats.creativity);
+  setBar('heroStrategyFill', 'heroStrategyLabel', stats.strategy);
+  setBar('heroMarketingFill', 'heroMarketingLabel', stats.marketing);
+}
+
 /* ---------- 全部重新渲染 ---------- */
 function renderAll(){
   applyStaticI18n();
@@ -1070,6 +1110,7 @@ function renderAll(){
   renderProjects();
   renderWorks();
   renderAbout();
+  renderHeroStats();
 }
 
 /* ---------- 語言切換 ---------- */
