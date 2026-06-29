@@ -179,7 +179,8 @@ label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var
         <a data-page="projects">★ Main Quests</a>
         <a data-page="works">▸ Past Works</a>
         <a data-page="education">🎓 Education</a>
-        <a data-page="bio">📜 Bio / Hero</a>
+        <a data-page="bio">📜 Bio Text</a>
+        <a data-page="herobg">🌆 Hero Banner</a>
       </nav>
       <div class="logout">
         <button class="btn btn-ghost" id="logoutBtn" style="width:100%;">⎋ LOGOUT</button>
@@ -296,6 +297,7 @@ async function renderPage(page){
   if(page === 'works') return renderWorksPage();
   if(page === 'education') return renderEducationPage();
   if(page === 'bio') return renderBioPage();
+  if(page === 'herobg') return renderHeroBgPage();
 }
 
 /* ============================================================
@@ -798,6 +800,83 @@ async function renderBioPage(){
       if(error){ showToast(error.message, true); return; }
     }
     showToast('已全部儲存');
+  });
+}
+
+/* ============================================================
+   HERO BANNER 頁（site_meta：hero_bg_morning / dusk / night）
+   ============================================================ */
+async function renderHeroBgPage(){
+  const root = document.getElementById('pageContent');
+  const { data: metas, error } = await sb.from('site_meta').select('*');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  const map = {};
+  metas.forEach(m => map[m.meta_key] = m);
+
+  const slots = [
+    { key:'hero_bg_morning', label:'☀️ 早晨背景圖', hint:'香港時間 06:00–16:59 顯示' },
+    { key:'hero_bg_dusk',    label:'🌇 黃昏背景圖', hint:'香港時間 17:00–18:59 顯示' },
+    { key:'hero_bg_night',   label:'🌙 夜晚背景圖', hint:'香港時間 19:00–05:59 顯示' },
+  ];
+
+  root.innerHTML = `
+    <div class="page-title">🌆 Hero Banner</div>
+    <div class="page-sub">上傳三張首頁頂部背景圖，網站會依香港當地時間自動切換顯示。建議使用同一構圖、不同光線氛圍的三張圖，切換時效果最自然。建議尺寸 1600×800 以上，橫向構圖。</div>
+    <div id="heroBgList"></div>
+  `;
+
+  const container = document.getElementById('heroBgList');
+  slots.forEach(slot=>{
+    const m = map[slot.key] || { meta_key: slot.key, value_zh:'' };
+    const url = m.value_zh || '';
+    const block = document.createElement('div');
+    block.className = 'panel';
+    block.dataset.key = slot.key;
+    block.dataset.url = url;
+    block.innerHTML = `
+      <div class="panel-head">
+        <h3>${slot.label}</h3>
+        <span class="tag">${slot.hint}</span>
+      </div>
+      <div class="img-upload" style="margin-bottom:0;">
+        <div class="img-preview hero-img-preview" style="width:140px; height:80px;">
+          ${url ? `<img src="${esc(url)}">` : '無圖'}
+        </div>
+        <div style="flex:1;">
+          <label>選擇圖片上傳</label>
+          <input type="file" accept="image/*" class="hero-bg-file">
+        </div>
+        <button class="btn btn-danger hero-bg-clear" ${url ? '' : 'style="display:none;"'}>移除</button>
+      </div>
+    `;
+    block.querySelector('.hero-bg-file').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      try{
+        const newUrl = await uploadImage(file);
+        const { error } = await sb.from('site_meta').upsert({
+          meta_key: slot.key, value_zh: newUrl, value_en: newUrl, value_ja: newUrl,
+        }, { onConflict:'meta_key' });
+        if(error){ showToast(error.message, true); return; }
+        block.dataset.url = newUrl;
+        block.querySelector('.hero-img-preview').innerHTML = `<img src="${esc(newUrl)}">`;
+        block.querySelector('.hero-bg-clear').style.display = '';
+        showToast(slot.label + ' 已上傳並儲存');
+      }catch(err){ showToast('上傳失敗：'+err.message, true); }
+    });
+    block.querySelector('.hero-bg-clear').addEventListener('click', async ()=>{
+      if(!confirm('確定要移除這張背景圖嗎？')) return;
+      const { error } = await sb.from('site_meta').upsert({
+        meta_key: slot.key, value_zh: '', value_en: '', value_ja: '',
+      }, { onConflict:'meta_key' });
+      if(error){ showToast(error.message, true); return; }
+      block.dataset.url = '';
+      block.querySelector('.hero-img-preview').innerHTML = '無圖';
+      block.querySelector('.hero-bg-clear').style.display = 'none';
+      showToast('已移除');
+    });
+    container.appendChild(block);
   });
 }
 
