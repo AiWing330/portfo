@@ -140,24 +140,82 @@ nav.wrap{ display:flex; align-items:center; justify-content:space-between; heigh
   font-size: 16px;
   color: var(--neon-pink);
 }
+.step-content{
+  display:grid;
+  grid-template-columns: 1fr 200px;
+  gap: 24px;
+  align-items: start;
+}
+.step-content.no-image{ grid-template-columns: 1fr; }
+@media (max-width: 640px){
+  .step-content{ grid-template-columns: 1fr; }
+}
 .step-body h3{
   font-family: var(--font-display);
   font-size: 17px;
   margin-bottom: 8px;
   letter-spacing: 0.02em;
 }
-.step-body p{ color: var(--ink-soft); font-size: 14.5px; margin-bottom: 16px; }
+.step-body p{ color: var(--ink-soft); font-size: 14.5px; }
+
 .step-image{
   border-radius: 6px;
   overflow:hidden;
   border: 1px solid var(--border);
   background: var(--panel);
-  aspect-ratio: 16/9;
-  max-width: 560px;
+  aspect-ratio: 4/3;
+  width: 200px;
+  flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
   font-family: var(--font-mono); font-size:11px; color: var(--ink-soft);
+  position:relative;
+  cursor: zoom-in;
+  transition: border-color .15s, transform .15s;
 }
+.step-image:hover{ border-color: var(--neon-cyan); transform: translateY(-2px); }
 .step-image img{ width:100%; height:100%; object-fit:cover; }
+.step-image .zoom-hint{
+  position:absolute; bottom:6px; right:8px;
+  font-family: var(--font-mono); font-size:9px; color: var(--neon-gold);
+  background: rgba(11,14,28,0.8); padding:3px 7px; border-radius:4px;
+  opacity:0; transition: opacity .15s;
+}
+.step-image:hover .zoom-hint{ opacity:1; }
+@media (max-width: 640px){
+  .step-image{ width:100%; aspect-ratio:16/9; }
+}
+
+/* ---------- LIGHTBOX（步驟圖片放大檢視） ---------- */
+.lightbox-overlay{
+  position: fixed; inset:0;
+  background: rgba(6,8,18,0.92);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display:none;
+  align-items:center; justify-content:center;
+  padding: 40px;
+}
+.lightbox-overlay.open{ display:flex; }
+.lightbox-overlay img{
+  max-width: 100%; max-height: 86vh;
+  border-radius: 8px;
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+.lightbox-close{
+  position:absolute; top:24px; right:28px;
+  background: var(--panel); border:1px solid var(--border); color: var(--ink-soft);
+  width:40px; height:40px; border-radius:6px; cursor:pointer;
+  font-family: var(--font-mono); font-size:16px;
+  transition: all .15s;
+}
+.lightbox-close:hover{ color: var(--neon-pink); border-color: var(--neon-pink); }
+.lightbox-caption{
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  font-family: var(--font-mono); font-size:12px; color: var(--ink-soft);
+  background: rgba(19,23,48,0.85); padding:8px 16px; border-radius:6px;
+  border:1px solid var(--border);
+}
 
 /* ---------- RESULT ---------- */
 .result-box{
@@ -227,6 +285,12 @@ footer{
   <div class="loading-state">LOADING...</div>
 </main>
 
+<div class="lightbox-overlay" id="lightboxOverlay" onclick="if(event.target===this)closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
 <footer>
   <div class="wrap">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
 </footer>
@@ -236,9 +300,9 @@ const SUPABASE_URL = 'https://rgcxzhhmqoyqhlmavqll.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_4nbpaqecLZQ7ddgLSEJrYQ_X3-CYmZ0';
 
 const i18nStatic = {
-  zh: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'找不到這個專案。', prev:'← 上一個', next:'下一個 →' },
-  en: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'Project not found.', prev:'← PREV', next:'NEXT →' },
-  ja: { back:'クエスト一覧へ', resultLabel:'★ 主な成果', notFound:'プロジェクトが見つかりません。', prev:'← 前へ', next:'次へ →' },
+  zh: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'找不到這個專案。', prev:'← 上一個', next:'下一個 →', clickToZoom:'點擊放大' },
+  en: { back:'BACK TO QUESTS', resultLabel:'★ KEY RESULT', notFound:'Project not found.', prev:'← PREV', next:'NEXT →', clickToZoom:'CLICK TO ZOOM' },
+  ja: { back:'クエスト一覧へ', resultLabel:'★ 主な成果', notFound:'プロジェクトが見つかりません。', prev:'← 前へ', next:'次へ →', clickToZoom:'クリックして拡大' },
 };
 
 let currentLang = 'zh';
@@ -327,10 +391,17 @@ function render(){
     ${(p.steps||[]).map(s=>`
       <div class="step">
         <div class="step-num">${esc(s.step_number||'')}</div>
-        <div class="step-body">
-          <h3>${esc(s.title||'')}</h3>
-          <p>${esc(L({zh:s.text_zh, en:s.text_en, ja:s.text_ja}))}</p>
-          ${s.image_url ? `<div class="step-image"><img src="${esc(s.image_url)}"></div>` : ''}
+        <div class="step-content${s.image_url ? '' : ' no-image'}">
+          <div class="step-body">
+            <h3>${esc(s.title||'')}</h3>
+            <p>${esc(L({zh:s.text_zh, en:s.text_en, ja:s.text_ja}))}</p>
+          </div>
+          ${s.image_url ? `
+            <div class="step-image" data-img-url="${esc(s.image_url)}" data-img-caption="${esc(s.title||'')}">
+              <img src="${esc(s.image_url)}">
+              <span class="zoom-hint">🔍 ${t('clickToZoom')}</span>
+            </div>
+          ` : ''}
         </div>
       </div>
     `).join('')}
@@ -359,6 +430,26 @@ document.querySelectorAll('.lang-switch button').forEach(btn=>{
     document.querySelectorAll('.lang-switch button').forEach(b=>b.classList.toggle('active', b===btn));
     render();
   });
+});
+
+/* ---------- Lightbox：步驟圖片放大檢視 ---------- */
+function openLightbox(url, caption){
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightboxCaption').textContent = caption || '';
+  document.getElementById('lightboxOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox(){
+  document.getElementById('lightboxOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeLightbox(); });
+
+// 事件委派：監聽整個 #projectRoot，點擊任何 .step-image（包含動態渲染出來的）都會觸發
+document.getElementById('projectRoot').addEventListener('click', (e)=>{
+  const target = e.target.closest('.step-image');
+  if(!target) return;
+  openLightbox(target.dataset.imgUrl, target.dataset.imgCaption);
 });
 
 (function init(){
