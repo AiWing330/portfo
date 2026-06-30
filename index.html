@@ -561,7 +561,7 @@ footer{
           <div class="stats-lv" id="heroLevel">LV.35</div>
 
           <div class="bar-row">
-            <div class="bar-label"><span id="heroStat1Name">EXP</span><span id="heroStat1Label" data-i18n="hero.exp">10 年經驗</span></div>
+            <div class="bar-label"><span id="heroStat1Name">DESIGN</span><span id="heroStat1Label">90/100</span></div>
             <div class="bar-track"><div class="bar-fill exp" id="heroStat1Fill"></div></div>
           </div>
           <div class="bar-row">
@@ -980,7 +980,7 @@ async function loadDataFromSupabase(){
         items: [
           {
             name: metaMap.hero_stat_1_name?.value_zh || 'EXP',
-            label: metaMap.hero_stat_1_label?.value_zh || metaMap.hero_exp_label?.value_zh || '10 年經驗',
+            label: metaMap.hero_stat_1_label?.value_zh || '',
             value: Number(metaMap.hero_stat_1_value?.value_zh || metaMap.hero_exp_value?.value_zh || 76),
           },
           {
@@ -1108,7 +1108,7 @@ function renderAbout(){
 function renderHeroStats(){
   const stats = DATA.heroStats || {};
   const defaultItems = [
-    { name:'EXP', label:'10 年經驗', value:76 },
+    { name:'EXP', label:null, value:76 },
     { name:'CREATIVITY', label:null, value:95 },
     { name:'STRATEGY', label:null, value:88 },
     { name:'MARKETING', label:null, value:90 },
