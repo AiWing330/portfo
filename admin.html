@@ -753,7 +753,7 @@ function buildEduCard(e){
 
 /* ============================================================
    HERO PROFILE / PLAYER STATS 頁（site_meta）
-   可修改首頁右邊 Player Stats：LV、EXP、Creativity、Strategy、Marketing
+   可完整修改首頁右邊 Player Stats：欄位名稱、右邊文字、Percent 數值
    ============================================================ */
 async function renderHeroStatsPage(){
   const root = document.getElementById('pageContent');
@@ -764,9 +764,72 @@ async function renderHeroStatsPage(){
   metas.forEach(m => map[m.meta_key] = m);
   const get = (key, fallback='') => map[key]?.value_zh || fallback;
 
+  const defaults = [
+    {
+      key: 1,
+      name: get('hero_stat_1_name', 'EXP'),
+      label: get('hero_stat_1_label', get('hero_exp_label', '10 年經驗')),
+      value: get('hero_stat_1_value', get('hero_exp_value', '76')),
+      hint: '例：名稱 EXP；右邊文字 8–10 years experience；Percent 70',
+    },
+    {
+      key: 2,
+      name: get('hero_stat_2_name', 'CREATIVITY'),
+      label: get('hero_stat_2_label', ''),
+      value: get('hero_stat_2_value', get('hero_creativity_value', '95')),
+      hint: '例：名稱 DESIGN；右邊文字 LV.88 或 88/100；Percent 88',
+    },
+    {
+      key: 3,
+      name: get('hero_stat_3_name', 'STRATEGY'),
+      label: get('hero_stat_3_label', ''),
+      value: get('hero_stat_3_value', get('hero_strategy_value', '88')),
+      hint: '例：名稱 STRATEGY；右邊文字 LV.78 或 78/100；Percent 78',
+    },
+    {
+      key: 4,
+      name: get('hero_stat_4_name', 'MARKETING'),
+      label: get('hero_stat_4_label', ''),
+      value: get('hero_stat_4_value', get('hero_marketing_value', '90')),
+      hint: '例：名稱 MARKETING；右邊文字 LV.75 或 75/100；Percent 75',
+    },
+  ];
+
+  const statPanel = (item) => `
+    <div class="panel">
+      <div class="panel-head"><h3>Stat ${item.key}</h3><span class="tag">Editable Row</span></div>
+      <div class="grid3">
+        <div class="field"><label>左邊欄位名稱</label><input id="heroStat${item.key}Name" value="${esc(item.name)}" placeholder="例如 EXP / DESIGN / STRATEGY"></div>
+        <div class="field"><label>右邊顯示文字</label><input id="heroStat${item.key}Label" value="${esc(item.label)}" placeholder="例如 LV.88 / 8 years experience / 88/100"></div>
+        <div class="field"><label>進度條 Percent（0–100）</label><input id="heroStat${item.key}Value" type="number" min="0" max="100" value="${esc(item.value)}"></div>
+      </div>
+      <div class="tags-input-hint">${item.hint}</div>
+    </div>`;
+
   root.innerHTML = `
     <div class="page-title">🧑 Hero Profile</div>
-    <div class="page-sub">管理首頁 Hero 右邊的 PLAYER STATS。數值建議不要太高，見工網站會更自然可信。Percent 會控制進度條長度，Label 會顯示在右邊文字。</div>
+    <div class="page-sub">管理首頁 Hero 右邊的 PLAYER STATS。現在每一欄都可以改：左邊名稱、右邊文字、Percent 進度條。</div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>📄 CV / Resume PDF</h3>
+        <span class="tag">DOWNLOAD RESUME 按鈕</span>
+      </div>
+      <div class="tags-input-hint" style="margin-bottom:12px;">上傳最新版履歷 PDF，首頁「⬇ DOWNLOAD RESUME」按鈕會直接連到這個檔案，訪客點擊即可下載。重新上傳會自動取代舊版本。</div>
+      <div class="img-upload" style="margin-bottom:0;">
+        <div class="img-preview" id="cvPreview" style="width:60px; height:60px; font-size:22px;">
+          ${get('cv_pdf_url') ? '📄' : '無檔'}
+        </div>
+        <div style="flex:1;">
+          <label>選擇 PDF 檔案上傳</label>
+          <input type="file" accept="application/pdf" id="cvFileInput">
+          <div id="cvCurrentLink" style="margin-top:8px; font-family:var(--font-mono); font-size:11px;">
+            ${get('cv_pdf_url') ? `<a href="${esc(get('cv_pdf_url'))}" target="_blank" style="color:var(--neon-cyan);">目前檔案 ↗</a>` : '尚未上傳'}
+          </div>
+        </div>
+        <button class="btn btn-danger" id="cvClearBtn" ${get('cv_pdf_url') ? '' : 'style="display:none;"'}>移除</button>
+      </div>
+    </div>
 
     <div class="panel">
       <div class="panel-head">
@@ -780,40 +843,61 @@ async function renderHeroStatsPage(){
       <div class="field"><label>Next Level 文字</label><input id="heroNextLevel" value="${esc(get('hero_next_level','▸ NEXT LEVEL: New adventures await!'))}" placeholder="例如 ▸ NEXT LEVEL: Ready for new challenges!"></div>
     </div>
 
-    <div class="panel">
-      <div class="panel-head"><h3>EXP</h3><span class="tag">Experience Bar</span></div>
-      <div class="grid2">
-        <div class="field"><label>EXP 右邊文字</label><input id="heroExpLabel" value="${esc(get('hero_exp_label','10 年經驗'))}" placeholder="例如 10 years experience"></div>
-        <div class="field"><label>EXP 進度條 Percent（0–100）</label><input id="heroExpValue" type="number" min="0" max="100" value="${esc(get('hero_exp_value','76'))}"></div>
-      </div>
-    </div>
+    ${defaults.map(statPanel).join('')}
 
     <div class="panel">
-      <div class="panel-head"><h3>能力值</h3><span class="tag">0–100</span></div>
-      <div class="grid3">
-        <div class="field"><label>Creativity 數值</label><input id="heroCreativity" type="number" min="0" max="100" value="${esc(get('hero_creativity_value','95'))}"></div>
-        <div class="field"><label>Strategy 數值</label><input id="heroStrategy" type="number" min="0" max="100" value="${esc(get('hero_strategy_value','88'))}"></div>
-        <div class="field"><label>Marketing 數值</label><input id="heroMarketing" type="number" min="0" max="100" value="${esc(get('hero_marketing_value','90'))}"></div>
-      </div>
-      <div class="tags-input-hint">例如想感覺謙虛一點，可以改成 Creativity 88、Strategy 78、Marketing 72。</div>
+      <div class="panel-head"><h3>建議數值</h3><span class="tag">More Natural</span></div>
+      <div class="tags-input-hint">如果覺得右邊經驗值太高，可以用：EXP 70、DESIGN 88、STRATEGY 76、MARKETING 72。這樣會比較謙虛可信。</div>
     </div>
 
     <button class="btn btn-primary" id="saveHeroStatsBtn">儲存 Hero Profile</button>
   `;
+
+  // ---------- CV PDF 上傳 ----------
+  document.getElementById('cvFileInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.type !== 'application/pdf'){ showToast('請上傳 PDF 檔案', true); return; }
+    try{
+      const url = await uploadImage(file); // uploadImage 通用上傳函式，PDF 也適用
+      const { error } = await sb.from('site_meta').upsert({
+        meta_key: 'cv_pdf_url', value_zh: url, value_en: url, value_ja: url,
+      }, { onConflict:'meta_key' });
+      if(error){ showToast(error.message, true); return; }
+      document.getElementById('cvPreview').textContent = '📄';
+      document.getElementById('cvCurrentLink').innerHTML = `<a href="${esc(url)}" target="_blank" style="color:var(--neon-cyan);">目前檔案 ↗</a>`;
+      document.getElementById('cvClearBtn').style.display = '';
+      showToast('CV 已上傳並儲存');
+    }catch(err){ showToast('上傳失敗：'+err.message, true); }
+  });
+  document.getElementById('cvClearBtn').addEventListener('click', async ()=>{
+    if(!confirm('確定要移除目前的 CV 檔案連結嗎？')) return;
+    const { error } = await sb.from('site_meta').upsert({
+      meta_key: 'cv_pdf_url', value_zh: '', value_en: '', value_ja: '',
+    }, { onConflict:'meta_key' });
+    if(error){ showToast(error.message, true); return; }
+    document.getElementById('cvPreview').textContent = '無檔';
+    document.getElementById('cvCurrentLink').textContent = '尚未上傳';
+    document.getElementById('cvClearBtn').style.display = 'none';
+    showToast('已移除');
+  });
 
   document.getElementById('saveHeroStatsBtn').addEventListener('click', async ()=>{
     const rows = [
       ['hero_level', document.getElementById('heroLevel').value],
       ['hero_stats_title', document.getElementById('heroStatsTitle').value],
       ['hero_next_level', document.getElementById('heroNextLevel').value],
-      ['hero_exp_label', document.getElementById('heroExpLabel').value],
-      ['hero_exp_value', clampPercent(document.getElementById('heroExpValue').value)],
-      ['hero_creativity_value', clampPercent(document.getElementById('heroCreativity').value)],
-      ['hero_strategy_value', clampPercent(document.getElementById('heroStrategy').value)],
-      ['hero_marketing_value', clampPercent(document.getElementById('heroMarketing').value)],
-    ].map(([meta_key, value])=>({ meta_key, value_zh:String(value), value_en:String(value), value_ja:String(value) }));
+    ];
 
-    const { error } = await sb.from('site_meta').upsert(rows, { onConflict:'meta_key' });
+    for(let i=1; i<=4; i++){
+      const value = clampPercent(document.getElementById(`heroStat${i}Value`).value);
+      rows.push([`hero_stat_${i}_name`, document.getElementById(`heroStat${i}Name`).value]);
+      rows.push([`hero_stat_${i}_label`, document.getElementById(`heroStat${i}Label`).value || `${value}/100`]);
+      rows.push([`hero_stat_${i}_value`, value]);
+    }
+
+    const payload = rows.map(([meta_key, value])=>({ meta_key, value_zh:String(value), value_en:String(value), value_ja:String(value) }));
+    const { error } = await sb.from('site_meta').upsert(payload, { onConflict:'meta_key' });
     if(error){ showToast(error.message, true); return; }
     showToast('Hero Profile 已儲存');
   });
