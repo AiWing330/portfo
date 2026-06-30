@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wing Lee | Level 35 Designer</title>
+<link rel="icon" type="image/png" href="/favicon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -551,7 +552,7 @@ footer{
           </p>
           <div class="hero-actions">
             <a href="#projects" class="btn btn-primary" data-i18n="hero.cta1">VIEW MY QUESTS →</a>
-            <a href="#" class="btn btn-ghost" data-i18n="hero.cta2">⬇ DOWNLOAD RESUME</a>
+            <a href="#" id="cvDownloadBtn" class="btn btn-ghost" data-i18n="hero.cta2" target="_blank" rel="noopener">⬇ DOWNLOAD RESUME</a>
           </div>
         </div>
 
@@ -560,20 +561,20 @@ footer{
           <div class="stats-lv" id="heroLevel">LV.35</div>
 
           <div class="bar-row">
-            <div class="bar-label"><span>EXP</span><span id="heroExpLabel" data-i18n="hero.exp">10 年經驗</span></div>
-            <div class="bar-track"><div class="bar-fill exp" id="heroExpFill"></div></div>
+            <div class="bar-label"><span id="heroStat1Name">EXP</span><span id="heroStat1Label" data-i18n="hero.exp">10 年經驗</span></div>
+            <div class="bar-track"><div class="bar-fill exp" id="heroStat1Fill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>CREATIVITY</span><span id="heroCreativityLabel">95/100</span></div>
-            <div class="bar-track"><div class="bar-fill creativity" id="heroCreativityFill"></div></div>
+            <div class="bar-label"><span id="heroStat2Name">CREATIVITY</span><span id="heroStat2Label">95/100</span></div>
+            <div class="bar-track"><div class="bar-fill creativity" id="heroStat2Fill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>STRATEGY</span><span id="heroStrategyLabel">88/100</span></div>
-            <div class="bar-track"><div class="bar-fill strategy" id="heroStrategyFill"></div></div>
+            <div class="bar-label"><span id="heroStat3Name">STRATEGY</span><span id="heroStat3Label">88/100</span></div>
+            <div class="bar-track"><div class="bar-fill strategy" id="heroStat3Fill"></div></div>
           </div>
           <div class="bar-row">
-            <div class="bar-label"><span>MARKETING</span><span id="heroMarketingLabel">90/100</span></div>
-            <div class="bar-track"><div class="bar-fill marketing" id="heroMarketingFill"></div></div>
+            <div class="bar-label"><span id="heroStat4Name">MARKETING</span><span id="heroStat4Label">90/100</span></div>
+            <div class="bar-track"><div class="bar-fill marketing" id="heroStat4Fill"></div></div>
           </div>
 
           <div class="stats-foot" id="heroNextLevel" data-i18n="hero.nextLevel">▸ NEXT LEVEL: New adventures await!</div>
@@ -976,12 +977,30 @@ async function loadDataFromSupabase(){
         level: metaMap.hero_level?.value_zh || 'LV.35',
         title: metaMap.hero_stats_title?.value_zh || null,
         nextLevel: metaMap.hero_next_level?.value_zh || null,
-        expLabel: metaMap.hero_exp_label?.value_zh || null,
-        expValue: Number(metaMap.hero_exp_value?.value_zh || 76),
-        creativity: Number(metaMap.hero_creativity_value?.value_zh || 95),
-        strategy: Number(metaMap.hero_strategy_value?.value_zh || 88),
-        marketing: Number(metaMap.hero_marketing_value?.value_zh || 90),
+        items: [
+          {
+            name: metaMap.hero_stat_1_name?.value_zh || 'EXP',
+            label: metaMap.hero_stat_1_label?.value_zh || metaMap.hero_exp_label?.value_zh || '10 年經驗',
+            value: Number(metaMap.hero_stat_1_value?.value_zh || metaMap.hero_exp_value?.value_zh || 76),
+          },
+          {
+            name: metaMap.hero_stat_2_name?.value_zh || 'CREATIVITY',
+            label: metaMap.hero_stat_2_label?.value_zh || null,
+            value: Number(metaMap.hero_stat_2_value?.value_zh || metaMap.hero_creativity_value?.value_zh || 95),
+          },
+          {
+            name: metaMap.hero_stat_3_name?.value_zh || 'STRATEGY',
+            label: metaMap.hero_stat_3_label?.value_zh || null,
+            value: Number(metaMap.hero_stat_3_value?.value_zh || metaMap.hero_strategy_value?.value_zh || 88),
+          },
+          {
+            name: metaMap.hero_stat_4_name?.value_zh || 'MARKETING',
+            label: metaMap.hero_stat_4_label?.value_zh || null,
+            value: Number(metaMap.hero_stat_4_value?.value_zh || metaMap.hero_marketing_value?.value_zh || 90),
+          },
+        ],
       },
+      cvPdfUrl: metaMap.cv_pdf_url?.value_zh || '',
     };
   }catch(e){
     console.error('Supabase fetch failed, falling back to local data', e);
@@ -1012,6 +1031,17 @@ function applyStaticI18n(){
   if(DATA.heroLead){
     const heroLeadEl = document.querySelector('[data-i18n="hero.lead"]');
     if(heroLeadEl) heroLeadEl.textContent = L(DATA.heroLead);
+  }
+  // CV 下載按鈕：有上傳 PDF 才指向實際檔案，否則維持原狀不可點擊感
+  const cvBtn = document.getElementById('cvDownloadBtn');
+  if(cvBtn){
+    if(DATA.cvPdfUrl){
+      cvBtn.href = DATA.cvPdfUrl;
+      cvBtn.removeAttribute('aria-disabled');
+    }else{
+      cvBtn.href = '#';
+      cvBtn.setAttribute('aria-disabled', 'true');
+    }
   }
   document.documentElement.lang = currentLang === 'zh' ? 'zh-Hant' : currentLang;
 }
@@ -1076,31 +1106,29 @@ function renderAbout(){
 
 /* ---------- 渲染 Hero 右邊 Player Stats ---------- */
 function renderHeroStats(){
-  const stats = DATA.heroStats || {
-    level:'LV.35', title:null, nextLevel:null, expLabel:null,
-    expValue:76, creativity:95, strategy:88, marketing:90
-  };
+  const stats = DATA.heroStats || {};
+  const defaultItems = [
+    { name:'EXP', label:'10 年經驗', value:76 },
+    { name:'CREATIVITY', label:null, value:95 },
+    { name:'STRATEGY', label:null, value:88 },
+    { name:'MARKETING', label:null, value:90 },
+  ];
+  const items = (stats.items && stats.items.length ? stats.items : defaultItems).slice(0,4);
   const clamp = v => Math.max(0, Math.min(100, Number(v) || 0));
   const setText = (id, text) => { const el = document.getElementById(id); if(el && text != null) el.textContent = text; };
-  const setBar = (fillId, labelId, value) => {
-    const v = clamp(value);
-    const fill = document.getElementById(fillId);
-    const label = document.getElementById(labelId);
-    if(fill) fill.style.width = v + '%';
-    if(label) label.textContent = v + '/100';
-  };
 
   setText('heroLevel', stats.level || 'LV.35');
   if(stats.title) setText('heroStatsTitle', stats.title);
-  if(stats.expLabel) setText('heroExpLabel', stats.expLabel);
   if(stats.nextLevel) setText('heroNextLevel', stats.nextLevel);
 
-  const exp = clamp(stats.expValue);
-  const expFill = document.getElementById('heroExpFill');
-  if(expFill) expFill.style.width = exp + '%';
-  setBar('heroCreativityFill', 'heroCreativityLabel', stats.creativity);
-  setBar('heroStrategyFill', 'heroStrategyLabel', stats.strategy);
-  setBar('heroMarketingFill', 'heroMarketingLabel', stats.marketing);
+  items.forEach((item, idx) => {
+    const n = idx + 1;
+    const v = clamp(item.value);
+    setText(`heroStat${n}Name`, item.name || `STAT ${n}`);
+    setText(`heroStat${n}Label`, item.label || `${v}/100`);
+    const fill = document.getElementById(`heroStat${n}Fill`);
+    if(fill) fill.style.width = v + '%';
+  });
 }
 
 /* ---------- 全部重新渲染 ---------- */
