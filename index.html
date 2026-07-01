@@ -475,6 +475,138 @@ section{ padding: 80px 0; }
 .timeline-row strong{ display:block; font-size:14px; margin-bottom:3px; }
 .timeline-row span{ font-size:13px; color: var(--ink-soft); }
 
+/* ---------- GALLERY CAROUSEL ---------- */
+.gallery-carousel-wrap{
+  position: relative;
+}
+.gallery-carousel{
+  display:flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  cursor: grab;
+}
+.gallery-carousel:active{ cursor: grabbing; }
+.gallery-carousel::-webkit-scrollbar{ display:none; }
+.gallery-arrow{
+  position:absolute; top:50%; transform: translateY(-50%);
+  background: var(--panel); border:1px solid var(--border);
+  color: var(--ink-soft); width:36px; height:36px;
+  border-radius:50%; cursor:pointer; z-index:2;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-mono); font-size:16px;
+  transition: border-color .15s, color .15s;
+}
+.gallery-arrow:hover{ border-color: var(--neon-cyan); color: var(--neon-cyan); }
+.gallery-arrow.prev{ left: -16px; }
+.gallery-arrow.next{ right: -16px; }
+
+.gallery-card{
+  flex: 0 0 220px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .18s, transform .18s;
+}
+.gallery-card:hover{ border-color: var(--neon-cyan); transform: translateY(-4px); }
+.gallery-thumb{
+  position: relative;
+  width: 220px; height: 140px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+.gallery-thumb img{
+  width:100%; height:100%; object-fit:cover; display:block;
+  transition: transform .3s;
+}
+.gallery-card:hover .gallery-thumb img{ transform: scale(1.04); }
+.gallery-thumb-placeholder{
+  width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  font-family: var(--font-mono); font-size:11px; color: var(--ink-soft);
+}
+.gallery-play-btn{
+  position:absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+  width:40px; height:40px; border-radius:50%;
+  background: rgba(11,14,28,0.75);
+  border: 2px solid var(--neon-gold);
+  display:flex; align-items:center; justify-content:center;
+  color: var(--neon-gold); font-size:16px;
+  pointer-events: none;
+  transition: background .15s;
+}
+.gallery-card:hover .gallery-play-btn{ background: rgba(255,200,87,0.2); }
+.gallery-type-badge{
+  position:absolute; top:8px; right:8px;
+  font-family: var(--font-mono); font-size:9px;
+  padding: 3px 7px; border-radius: 4px;
+}
+.gallery-type-badge.video{ background: rgba(255,200,87,0.2); color: var(--neon-gold); border:1px solid rgba(255,200,87,0.4); }
+.gallery-type-badge.image{ background: rgba(77,216,232,0.15); color: var(--neon-cyan); border:1px solid rgba(77,216,232,0.3); }
+.gallery-type-badge.illustration{ background: rgba(167,139,250,0.15); color: var(--neon-purple); border:1px solid rgba(167,139,250,0.3); }
+
+.gallery-info{ padding: 12px 14px; }
+.gallery-meta{
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--neon-gold); margin-bottom: 5px;
+}
+.gallery-info h4{
+  font-family: var(--font-display);
+  font-size: 13px; margin-bottom: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gallery-tags{ display:flex; gap:5px; flex-wrap:wrap; }
+.gallery-tag{
+  font-family: var(--font-mono); font-size: 9.5px;
+  color: var(--ink-soft); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 3px; padding: 2px 7px;
+}
+
+/* Gallery Lightbox */
+.gallery-lightbox{
+  position:fixed; inset:0; z-index:2000;
+  background: rgba(6,8,18,0.95);
+  backdrop-filter: blur(8px);
+  display:none; align-items:center; justify-content:center;
+  padding: 24px;
+}
+.gallery-lightbox.open{ display:flex; }
+.gallery-lb-inner{
+  position:relative;
+  max-width: 900px; width:100%;
+}
+.gallery-lb-close{
+  position:absolute; top:-40px; right:0;
+  background: var(--panel); border:1px solid var(--border);
+  color: var(--ink-soft); width:32px; height:32px;
+  border-radius:4px; cursor:pointer;
+  font-family: var(--font-mono); font-size:14px;
+  display:flex; align-items:center; justify-content:center;
+  transition: all .15s;
+}
+.gallery-lb-close:hover{ color: var(--neon-pink); border-color: var(--neon-pink); }
+.gallery-lb-img{
+  width:100%; border-radius:6px;
+  border:2px solid var(--neon-cyan);
+  display:block;
+}
+.gallery-lb-video{
+  width:100%; aspect-ratio: 16/9;
+  border-radius:6px; border:2px solid var(--neon-cyan);
+}
+.gallery-lb-caption{
+  margin-top: 14px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.gallery-lb-caption .title{
+  font-family: var(--font-display); font-size:15px;
+}
+.gallery-lb-caption .tags{ display:flex; gap:6px; }
+
 /* ---------- CONTACT ---------- */
 .contact-card{
   background: var(--panel);
@@ -515,6 +647,7 @@ footer{
       <a href="#top" class="active" data-section="top" data-i18n="nav.home">HOME</a>
       <a href="#skills" data-section="skills" data-i18n="nav.skills">SKILLS</a>
       <a href="#projects" data-section="projects" data-i18n="nav.projects">PROJECTS</a>
+      <a href="#gallery" data-section="gallery" data-i18n="nav.gallery">GALLERY</a>
       <a href="#works" data-section="works" data-i18n="nav.works">WORKS</a>
       <a href="#about" data-section="about" data-i18n="nav.about">ABOUT</a>
       <a href="#contact" data-section="contact" data-i18n="nav.contact">CONTACT</a>
@@ -607,6 +740,24 @@ footer{
     </div>
   </section>
 
+  <!-- ============ GALLERY ============ -->
+  <section id="gallery">
+    <div class="wrap">
+      <div class="section-head fade-in">
+        <div class="section-tag" data-i18n="gallery.tag">🎨 GALLERY</div>
+        <h2 data-i18n="gallery.title">PAST WORKS</h2>
+        <p data-i18n="gallery.desc">影片、社群圖像與插畫作品。</p>
+      </div>
+      <div class="gallery-carousel-wrap fade-in">
+        <button class="gallery-arrow prev" id="galleryPrev" aria-label="Previous">←</button>
+        <div class="gallery-carousel" id="galleryCarousel">
+          <div style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);padding:40px 0;" data-i18n="gallery.empty">暫無作品，請到後台上傳。</div>
+        </div>
+        <button class="gallery-arrow next" id="galleryNext" aria-label="Next">→</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ PAST WORKS ============ -->
   <section id="works">
     <div class="wrap">
@@ -659,6 +810,18 @@ footer{
 
 </main>
 
+<!-- ============ GALLERY LIGHTBOX ============ -->
+<div class="gallery-lightbox" id="galleryLightbox" onclick="if(event.target===this)closeGalleryLb()">
+  <div class="gallery-lb-inner">
+    <button class="gallery-lb-close" onclick="closeGalleryLb()">✕</button>
+    <div id="galleryLbContent"></div>
+    <div class="gallery-lb-caption">
+      <span class="title" id="galleryLbTitle"></span>
+      <div class="tags" id="galleryLbTags"></div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap" data-i18n="footer.text">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
 </footer>
@@ -679,7 +842,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_4nbpaqecLZQ7ddgLSEJrYQ_X3-CYmZ0';
 const i18n = {
   zh: {
     'nav.level':'LV.35 DESIGNER', 'nav.home':'HOME', 'nav.skills':'SKILLS',
-    'nav.projects':'PROJECTS', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
+    'nav.projects':'PROJECTS', 'nav.gallery':'GALLERY', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
     'hero.greet':"HELLO, I'M",
     'hero.role':'DESIGNER × DIGITAL MARKETER',
     'hero.lead':'10 年多媒體設計經驗，現正轉型數位行銷與 AI／Martech。擅長把創意轉化成可被衡量的成效，從品牌策略到落地內容一手打造。',
@@ -688,7 +851,9 @@ const i18n = {
     'hero.nextLevel':'▸ NEXT LEVEL: New adventures await!',
     'skills.tag':'⚡ SKILL TREE', 'skills.title':'SKILLS', 'skills.desc':'從設計到行銷到 AI 工具，跨領域的能力組合。',
     'projects.tag':'★ FEATURED PROJECTS', 'projects.title':'MAIN QUESTS', 'projects.desc':'點擊卡片查看完整專案內容，包含過程、使用技能與成果。',
-    'works.tag':'▸ ARCHIVE', 'works.title':'PAST WORKS', 'works.desc':'過去任職期間累積的作品紀錄。',
+    'gallery.tag':'🎨 GALLERY', 'gallery.title':'PAST WORKS', 'gallery.desc':'影片、社群圖像與插畫作品。點擊卡片查看，影片支援全螢幕播放。',
+    'gallery.empty':'暫無作品，請到後台上傳。', 'gallery.typeVideo':'影片', 'gallery.typeImage':'圖像', 'gallery.typeIllustration':'插畫',
+    'works.tag':'▸ ARCHIVE', 'works.title':'EXPERIENCE', 'works.desc':'過去任職期間累積的作品紀錄。',
     'about.tag':'◆ CHARACTER INFO', 'about.title':'ABOUT ME', 'about.eduTitle':'🎓 EDUCATION', 'about.bioTitle':'📜 BIO',
     'contact.tag':'✦ NEXT QUEST', 'contact.title':'LET\'S BUILD SOMETHING TOGETHER',
     'contact.desc':'無論是品牌策略、內容企劃或設計協作，歡迎跟我聊聊你的專案。', 'contact.email':'✉ EMAIL ME',
@@ -698,7 +863,7 @@ const i18n = {
   },
   en: {
     'nav.level':'LV.35 DESIGNER', 'nav.home':'HOME', 'nav.skills':'SKILLS',
-    'nav.projects':'PROJECTS', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
+    'nav.projects':'PROJECTS', 'nav.gallery':'GALLERY', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
     'hero.greet':"HELLO, I'M",
     'hero.role':'DESIGNER × DIGITAL MARKETER',
     'hero.lead':'10 years of multimedia design experience, now transitioning into digital marketing and AI/Martech. I turn creative ideas into measurable results — from brand strategy to final delivery.',
@@ -707,7 +872,9 @@ const i18n = {
     'hero.nextLevel':'▸ NEXT LEVEL: New adventures await!',
     'skills.tag':'⚡ SKILL TREE', 'skills.title':'SKILLS', 'skills.desc':'A cross-disciplinary toolkit spanning design, marketing, and AI tools.',
     'projects.tag':'★ FEATURED PROJECTS', 'projects.title':'MAIN QUESTS', 'projects.desc':'Click a card to see the full project — process, skills used, and results.',
-    'works.tag':'▸ ARCHIVE', 'works.title':'PAST WORKS', 'works.desc':'A record of work built up across past roles.',
+    'gallery.tag':'🎨 GALLERY', 'gallery.title':'PAST WORKS', 'gallery.desc':'Videos, social media visuals, and illustrations. Click to view — videos play fullscreen.',
+    'gallery.empty':'No works yet. Upload from the admin panel.', 'gallery.typeVideo':'Video', 'gallery.typeImage':'Image', 'gallery.typeIllustration':'Illustration',
+    'works.tag':'▸ ARCHIVE', 'works.title':'EXPERIENCE', 'works.desc':'A record of work built up across past roles.',
     'about.tag':'◆ CHARACTER INFO', 'about.title':'ABOUT ME', 'about.eduTitle':'🎓 EDUCATION', 'about.bioTitle':'📜 BIO',
     'contact.tag':'✦ NEXT QUEST', 'contact.title':'LET\'S BUILD SOMETHING TOGETHER',
     'contact.desc':'Whether it\'s brand strategy, content planning, or design collaboration — let\'s talk about your project.', 'contact.email':'✉ EMAIL ME',
@@ -717,7 +884,7 @@ const i18n = {
   },
   ja: {
     'nav.level':'LV.35 DESIGNER', 'nav.home':'HOME', 'nav.skills':'SKILLS',
-    'nav.projects':'PROJECTS', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
+    'nav.projects':'PROJECTS', 'nav.gallery':'GALLERY', 'nav.works':'WORKS', 'nav.about':'ABOUT', 'nav.contact':'CONTACT',
     'hero.greet':'こんにちは、',
     'hero.role':'デザイナー × デジタルマーケター',
     'hero.lead':'マルチメディアデザイン経験10年。現在はデジタルマーケティングとAI／Martechへ転向中。ブランド戦略から制作物まで、成果を測れるクリエイティブを手がけています。',
@@ -726,6 +893,8 @@ const i18n = {
     'hero.nextLevel':'▸ 次のレベル：新しい冒険が待っています！',
     'skills.tag':'⚡ スキルツリー', 'skills.title':'SKILLS', 'skills.desc':'デザイン、マーケティング、AIツールを横断するスキルセット。',
     'projects.tag':'★ 主要プロジェクト', 'projects.title':'メインクエスト', 'projects.desc':'カードをクリックすると、プロセス・使用スキル・成果を含む詳細が表示されます。',
+    'gallery.tag':'🎨 ギャラリー', 'gallery.title':'制作実績', 'gallery.desc':'動画、SNS用ビジュアル、イラスト作品。クリックして閲覧できます。',
+    'gallery.empty':'作品がありません。管理画面からアップロードしてください。', 'gallery.typeVideo':'動画', 'gallery.typeImage':'画像', 'gallery.typeIllustration':'イラスト',
     'works.tag':'▸ アーカイブ', 'works.title':'過去の制作物', 'works.desc':'これまでの職務で積み上げてきた制作の記録。',
     'about.tag':'◆ キャラクター情報', 'about.title':'ABOUT ME', 'about.eduTitle':'🎓 学歴', 'about.bioTitle':'📜 自己紹介',
     'contact.tag':'✦ 次のクエスト', 'contact.title':'一緒に何かを作りましょう',
@@ -1163,7 +1332,7 @@ function refreshObserver(){
 
 /* ---------- nav active 狀態：捲動時自動偵測目前所在區塊 ---------- */
 const navLinks = [...document.querySelectorAll('.navlinks a')];
-const sectionIds = ['skills','projects','works','about','contact'];
+const sectionIds = ['skills','projects','gallery','works','about','contact'];
 const sectionEls = sectionIds.map(id => document.getElementById(id)).filter(Boolean);
 
 function setActiveNav(sectionKey){
@@ -1228,6 +1397,98 @@ function applyHeroTimeOfDay(){
 }
 
 /* ---------- 初始化 ---------- */
+/* ============================================================
+   GALLERY：從 Supabase 讀取作品集，渲染 Carousel + Lightbox
+   ============================================================ */
+function getYoutubeEmbedUrl(url){
+  const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1` : null;
+}
+function getVimeoEmbedUrl(url){
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  return m ? `https://player.vimeo.com/video/${m[1]}?autoplay=1` : null;
+}
+function getEmbedUrl(url){
+  return getYoutubeEmbedUrl(url) || getVimeoEmbedUrl(url) || null;
+}
+
+async function loadGallery(){
+  const car = document.getElementById('galleryCarousel');
+  try{
+    const items = await sbFetch('gallery', 'select=*&is_published=eq.true&order=sort_order');
+    if(!items.length){
+      car.innerHTML = `<div style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);padding:40px 0;">${t('gallery.empty')}</div>`;
+      return;
+    }
+    car.innerHTML = items.map(item=>{
+      const typeLabel = item.type==='video' ? t('gallery.typeVideo') : item.type==='image' ? t('gallery.typeImage') : t('gallery.typeIllustration');
+      const thumb = item.cover_url
+        ? `<img src="${item.cover_url}" alt="${item.title}" loading="lazy">`
+        : `<div class="gallery-thumb-placeholder">${item.title}</div>`;
+      const playBtn = item.type==='video' ? `<div class="gallery-play-btn">▶</div>` : '';
+      const tags = (item.tags||[]).map(tg=>`<span class="gallery-tag">${tg}</span>`).join('');
+      return `
+        <div class="gallery-card" onclick="openGalleryLb(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+          <div class="gallery-thumb">
+            ${thumb}${playBtn}
+            <span class="gallery-type-badge ${item.type}">${typeLabel}</span>
+          </div>
+          <div class="gallery-info">
+            <div class="gallery-meta">${item.year||''}${item.client?' · '+item.client:''}</div>
+            <h4>${item.title}</h4>
+            <div class="gallery-tags">${tags}</div>
+          </div>
+        </div>`;
+    }).join('');
+    initGalleryDrag();
+  }catch(e){
+    console.error('Gallery fetch failed', e);
+    car.innerHTML = `<div style="font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);padding:40px 0;">${t('gallery.empty')}</div>`;
+  }
+}
+
+function openGalleryLb(item){
+  if(typeof item === 'string') item = JSON.parse(item);
+  const content = document.getElementById('galleryLbContent');
+  if(item.type==='video'){
+    const embedUrl = getEmbedUrl(item.media_url||'');
+    if(embedUrl){
+      content.innerHTML = `<iframe class="gallery-lb-video" src="${embedUrl}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+    }else if(item.cover_url){
+      content.innerHTML = `<img class="gallery-lb-img" src="${item.cover_url}" alt="${item.title}">`;
+    }
+  }else{
+    const src = item.media_url||item.cover_url||'';
+    content.innerHTML = src ? `<img class="gallery-lb-img" src="${src}" alt="${item.title}">` : '';
+  }
+  document.getElementById('galleryLbTitle').textContent = item.title||'';
+  document.getElementById('galleryLbTags').innerHTML = (item.tags||[]).map(tg=>`<span class="gallery-tag">${tg}</span>`).join('');
+  document.getElementById('galleryLightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeGalleryLb(){
+  document.getElementById('galleryLightbox').classList.remove('open');
+  document.getElementById('galleryLbContent').innerHTML = '';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeGalleryLb(); });
+
+document.getElementById('galleryPrev').addEventListener('click', ()=>{
+  document.getElementById('galleryCarousel').scrollBy({left:-500, behavior:'smooth'});
+});
+document.getElementById('galleryNext').addEventListener('click', ()=>{
+  document.getElementById('galleryCarousel').scrollBy({left:500, behavior:'smooth'});
+});
+
+function initGalleryDrag(){
+  const el = document.getElementById('galleryCarousel');
+  let isDown=false, startX, scrollLeft;
+  el.addEventListener('mousedown', e=>{ isDown=true; startX=e.pageX-el.offsetLeft; scrollLeft=el.scrollLeft; });
+  el.addEventListener('mouseleave', ()=>{ isDown=false; });
+  el.addEventListener('mouseup', ()=>{ isDown=false; });
+  el.addEventListener('mousemove', e=>{ if(!isDown) return; e.preventDefault(); const x=e.pageX-el.offsetLeft; el.scrollLeft=scrollLeft-(x-startX)*1.5; });
+}
+
 (async function init(){
   DATA = await loadDataFromSupabase();
   renderAll();
@@ -1235,7 +1496,7 @@ function applyHeroTimeOfDay(){
   initNavSpy();
   setHeroBgImages(DATA.heroBg || {});
   applyHeroTimeOfDay();
-  // 每 10 分鐘重新檢查一次時段，網站開著跨時段時會自動更新
+  loadGallery();
   setInterval(applyHeroTimeOfDay, 10 * 60 * 1000);
 })();
 </script>

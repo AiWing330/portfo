@@ -179,6 +179,7 @@ label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var
         <a data-page="skills" class="active">⚡ Skills</a>
         <a data-page="herostats">🧑 Hero Profile</a>
         <a data-page="projects">★ Main Quests</a>
+        <a data-page="gallery">🎨 Gallery</a>
         <a data-page="works">▸ Past Works</a>
         <a data-page="education">🎓 Education</a>
         <a data-page="bio">📜 Bio Text</a>
@@ -298,6 +299,7 @@ async function renderPage(page){
   if(page === 'herostats') return renderHeroStatsPage();
   if(page === 'projects') return renderProjectsPage();
   if(page === 'works') return renderWorksPage();
+  if(page === 'gallery') return renderGalleryPage();
   if(page === 'education') return renderEducationPage();
   if(page === 'bio') return renderBioPage();
   if(page === 'herobg') return renderHeroBgPage();
@@ -638,6 +640,134 @@ function buildProjectCard(p, metas, steps){
 /* ============================================================
    WORKS 頁
    ============================================================ */
+/* ============================================================
+   GALLERY 頁（作品集管理：影片/圖像/插畫）
+   ============================================================ */
+async function renderGalleryPage(){
+  const root = document.getElementById('pageContent');
+  const { data: items, error } = await sb.from('gallery').select('*').order('sort_order');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+
+  root.innerHTML = `
+    <div class="page-title">🎨 Gallery</div>
+    <div class="page-sub">管理作品集——影片（YouTube/Vimeo）、社群圖像、插畫。上傳封面圖跟連結後，首頁 Gallery 區塊就會顯示。</div>
+    <div id="galleryList"></div>
+    <button class="btn btn-ghost" id="addGalleryBtn" style="margin-top:8px;">+ 新增作品</button>
+  `;
+
+  const list = document.getElementById('galleryList');
+  items.forEach(item => list.appendChild(buildGalleryCard(item)));
+  document.getElementById('addGalleryBtn').addEventListener('click', ()=>{
+    list.appendChild(buildGalleryCard({ id:null, title:'', type:'image', cover_url:'', media_url:'', tags:[], year:'', client:'', is_published:true, sort_order: items.length+1 }));
+  });
+}
+
+function buildGalleryCard(item){
+  const card = document.createElement('div');
+  card.className = 'panel';
+  card.innerHTML = `
+    <div class="panel-head">
+      <h3>${esc(item.title) || '（新作品）'}</h3>
+      <span class="tag">${esc(item.type||'image')}</span>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>作品標題 *</label><input class="f-title" value="${esc(item.title)}"></div>
+      <div class="field"><label>類型</label>
+        <select class="f-type">
+          <option value="image" ${item.type==='image'?'selected':''}>🖼 圖像（FB/IG 等）</option>
+          <option value="illustration" ${item.type==='illustration'?'selected':''}>✏️ 插畫</option>
+          <option value="video" ${item.type==='video'?'selected':''}>▶ 影片</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>年份</label><input class="f-year" value="${esc(item.year)}" placeholder="例如 2024"></div>
+      <div class="field"><label>客戶名稱（選填）</label><input class="f-client" value="${esc(item.client)}" placeholder="例如 DCH Mobility"></div>
+    </div>
+    <div class="field"><label>標籤（逗號分隔）</label><input class="f-tags" value="${esc((item.tags||[]).join(', '))}"></div>
+
+    <div class="img-upload" style="margin:12px 0 4px;">
+      <div class="img-preview gallery-cover-preview" style="width:100px;height:64px;">
+        ${item.cover_url ? `<img src="${esc(item.cover_url)}">` : '封面圖'}
+      </div>
+      <div style="flex:1;">
+        <label>封面圖（所有類型都需要，建議 16:9 橫向）</label>
+        <input type="file" accept="image/*" class="f-cover-file">
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">已有封面：<a class="f-cover-link" href="${esc(item.cover_url||'')}" target="_blank" style="color:var(--neon-cyan);">${item.cover_url ? '查看' : '無'}</a></div>
+      </div>
+    </div>
+
+    <div class="field video-url-field" style="${item.type!=='video'?'display:none;':''}">
+      <label>影片網址（YouTube 或 Vimeo，點擊後 Lightbox 播放）</label>
+      <input class="f-media-url" value="${esc(item.media_url)}" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+    <div class="field image-url-field" style="${item.type==='video'?'display:none;':''}">
+      <label>原圖連結（選填，留空則 Lightbox 顯示封面圖）</label>
+      <input class="f-media-url" value="${esc(item.media_url)}" placeholder="https://...">
+    </div>
+
+    <div class="field" style="display:flex;align-items:center;gap:10px;">
+      <label style="margin-bottom:0;">顯示於網站</label>
+      <input type="checkbox" class="f-published" ${item.is_published!==false?'checked':''} style="width:auto;">
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:10px;">
+      <button class="btn btn-primary btn-save">儲存</button>
+      <button class="btn btn-danger btn-delete">刪除</button>
+    </div>
+  `;
+
+  // 類型切換時切換對應的 URL 欄位說明
+  card.querySelector('.f-type').addEventListener('change', e=>{
+    const isVideo = e.target.value === 'video';
+    card.querySelector('.video-url-field').style.display = isVideo ? '' : 'none';
+    card.querySelector('.image-url-field').style.display = isVideo ? 'none' : '';
+  });
+
+  // 封面圖上傳
+  card.querySelector('.f-cover-file').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const url = await uploadImage(file);
+      item.cover_url = url;
+      card.querySelector('.gallery-cover-preview').innerHTML = `<img src="${esc(url)}">`;
+      card.querySelector('.f-cover-link').href = url;
+      card.querySelector('.f-cover-link').textContent = '查看';
+      showToast('封面圖已上傳，記得按「儲存」');
+    }catch(err){ showToast('上傳失敗：'+err.message, true); }
+  });
+
+  card.querySelector('.btn-save').addEventListener('click', async ()=>{
+    const payload = {
+      title: card.querySelector('.f-title').value.trim(),
+      type: card.querySelector('.f-type').value,
+      cover_url: item.cover_url || '',
+      media_url: card.querySelector('.f-media-url').value.trim(),
+      tags: card.querySelector('.f-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
+      year: card.querySelector('.f-year').value.trim(),
+      client: card.querySelector('.f-client').value.trim(),
+      is_published: card.querySelector('.f-published').checked,
+      sort_order: item.sort_order || 0,
+    };
+    if(!payload.title){ showToast('請填寫作品標題', true); return; }
+    let res;
+    if(item.id){ res = await sb.from('gallery').update(payload).eq('id', item.id); }
+    else{ res = await sb.from('gallery').insert(payload).select().single(); if(res.data) item.id = res.data.id; }
+    if(res.error){ showToast(res.error.message, true); }
+    else{ showToast('已儲存'); card.querySelector('.panel-head h3').textContent = payload.title; }
+  });
+
+  card.querySelector('.btn-delete').addEventListener('click', async ()=>{
+    if(!confirm('確定要刪除這個作品嗎？')) return;
+    if(item.id){ const { error } = await sb.from('gallery').delete().eq('id', item.id); if(error){ showToast(error.message, true); return; } }
+    card.remove();
+    showToast('已刪除');
+  });
+
+  return card;
+}
+
 async function renderWorksPage(){
   const root = document.getElementById('pageContent');
   const { data: works, error } = await sb.from('works').select('*').order('sort_order');
