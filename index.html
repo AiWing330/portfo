@@ -1197,7 +1197,7 @@ async function loadDataFromSupabase(){
           {
             name: metaMap.hero_stat_1_name?.value_zh || 'EXP',
             label: metaMap.hero_stat_1_label?.value_zh || '',
-            value: Number(metaMap.hero_stat_1_value?.value_zh || metaMap.hero_exp_value?.value_zh || 76),
+            value: Number(metaMap.hero_stat_1_value?.value_zh) || Number((metaMap.hero_stat_1_label?.value_zh || '').match(/(\d+)/)?.[1]) || Number(metaMap.hero_exp_value?.value_zh) || 76,
           },
           {
             name: metaMap.hero_stat_2_name?.value_zh || 'CREATIVITY',
