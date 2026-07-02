@@ -99,6 +99,11 @@ label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var
 .main-area{ flex:1; padding: 32px 40px; max-width: 980px; }
 .page-title{ font-family: var(--font-display); font-size: 22px; margin-bottom: 6px; }
 .page-sub{ color: var(--ink-soft); font-size: 13px; margin-bottom: 28px; }
+.editable-title-row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.btn-edit-header{ background:none; border:none; cursor:pointer; font-size:14px; opacity:0.5; transition: opacity .15s; padding:2px; }
+.btn-edit-header:hover{ opacity:1; }
+.editable-field[contenteditable="true"]{ background:var(--panel-2); border-radius:4px; padding:4px 8px; outline:1px solid var(--neon-cyan); cursor:text; }
+.editable-page-header .page-sub{ margin-bottom:8px; }
 
 .panel{ background: var(--panel); border:1px solid var(--border); border-radius:6px; padding:22px; margin-bottom:18px; }
 .panel-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
@@ -308,14 +313,147 @@ async function renderPage(page){
 /* ============================================================
    SKILLS 頁
    ============================================================ */
+/* ============================================================
+   通用拖曳排序 — makeDraggable(container, rowSelector, handleSelector)
+   解決 overflow-scroll 容器內 clientY 偏移問題，用 pointer events 實作
+   ============================================================ */
+function makeDraggable(container, rowSelector='.drag-row', handleSelector='.drag-handle'){
+  let dragging = null, clone = null, startY = 0, startScrollTop = 0, offsetY = 0;
+
+  function getRows(){ return [...container.querySelectorAll(rowSelector)]; }
+
+  function clearIndicators(){ container.querySelectorAll('.drag-indicator').forEach(el=>el.remove()); }
+
+  function showIndicator(beforeEl){
+    clearIndicators();
+    const ind = document.createElement('div');
+    ind.className = 'drag-indicator';
+    ind.style.cssText = 'height:2px; background:var(--neon-cyan); border-radius:2px; margin:2px 0; pointer-events:none;';
+    if(beforeEl) container.insertBefore(ind, beforeEl);
+    else container.appendChild(ind);
+  }
+
+  container.addEventListener('pointerdown', e=>{
+    const handle = e.target.closest(handleSelector);
+    if(!handle) return;
+    const row = e.target.closest(rowSelector);
+    if(!row) return;
+    e.preventDefault();
+    dragging = row;
+    const rect = row.getBoundingClientRect();
+    offsetY = e.clientY - rect.top;
+    startY = e.clientY;
+    startScrollTop = container.scrollTop;
+    dragging.style.opacity = '0.4';
+    dragging.style.outline = '2px solid var(--neon-cyan)';
+    container.setPointerCapture(e.pointerId);
+  });
+
+  container.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    e.preventDefault();
+    const containerRect = container.getBoundingClientRect();
+    const relY = e.clientY - containerRect.top + container.scrollTop - offsetY + 20;
+
+    const rows = getRows().filter(r=>r!==dragging);
+    let insertBefore = null;
+    for(const row of rows){
+      const rect = row.getBoundingClientRect();
+      const rowTop = rect.top - containerRect.top + container.scrollTop;
+      const rowMid = rowTop + rect.height / 2;
+      if(relY < rowMid){ insertBefore = row; break; }
+    }
+    showIndicator(insertBefore);
+    if(insertBefore) container.insertBefore(dragging, insertBefore);
+    else container.appendChild(dragging);
+  });
+
+  container.addEventListener('pointerup', e=>{
+    if(!dragging) return;
+    dragging.style.opacity = '1';
+    dragging.style.outline = '';
+    dragging = null;
+    clearIndicators();
+    container.releasePointerCapture(e.pointerId);
+  });
+
+  container.addEventListener('pointercancel', ()=>{
+    if(dragging){ dragging.style.opacity='1'; dragging.style.outline=''; dragging=null; }
+    clearIndicators();
+  });
+}
+
+/* ============================================================
+   可編輯頁面標題/副標題 — 每頁通用
+   ============================================================ */
+function makeEditablePageHeader(pageKey, defaultTitle, defaultSub, metaMap){
+  const title = metaMap[`admin_title_${pageKey}`]?.value_zh || defaultTitle;
+  const sub = metaMap[`admin_sub_${pageKey}`]?.value_zh || defaultSub;
+  const id = `editHeader_${pageKey}`;
+  return `
+    <div class="editable-page-header" id="${id}">
+      <div class="editable-title-row">
+        <div class="page-title editable-field" contenteditable="false" data-key="admin_title_${pageKey}">${esc(title)}</div>
+        <button class="btn-edit-header" onclick="toggleEditHeader('${id}')" title="編輯標題與說明">✏️</button>
+      </div>
+      <div class="page-sub editable-field" contenteditable="false" data-key="admin_sub_${pageKey}">${esc(sub)}</div>
+      <div class="edit-header-actions" style="display:none; margin-top:8px; gap:8px;">
+        <button class="btn btn-primary" onclick="savePageHeader('${id}')">儲存標題</button>
+        <button class="btn btn-ghost" onclick="cancelEditHeader('${id}', '${esc(title).replace(/'/g,"\\'")}', '${esc(sub).replace(/'/g,"\\'")}')">取消</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleEditHeader(id){
+  const wrap = document.getElementById(id);
+  wrap.querySelectorAll('.editable-field').forEach(el=>{
+    el.contentEditable = el.contentEditable === 'true' ? 'false' : 'true';
+    el.style.background = el.contentEditable === 'true' ? 'var(--panel-2)' : '';
+    el.style.borderRadius = '4px';
+    el.style.padding = el.contentEditable === 'true' ? '4px 8px' : '';
+    el.style.outline = el.contentEditable === 'true' ? '1px solid var(--neon-cyan)' : '';
+  });
+  wrap.querySelector('.edit-header-actions').style.display =
+    wrap.querySelector('.editable-field').contentEditable === 'true' ? 'flex' : 'none';
+}
+
+async function savePageHeader(id){
+  const wrap = document.getElementById(id);
+  const fields = wrap.querySelectorAll('.editable-field');
+  for(const f of fields){
+    const key = f.dataset.key;
+    const val = f.textContent.trim();
+    await sb.from('site_meta').upsert({ meta_key:key, value_zh:val, value_en:val, value_ja:val }, { onConflict:'meta_key' });
+    f.contentEditable = 'false';
+    f.style.background = '';
+    f.style.padding = '';
+    f.style.outline = '';
+  }
+  wrap.querySelector('.edit-header-actions').style.display = 'none';
+  showToast('標題已儲存');
+}
+
+function cancelEditHeader(id, origTitle, origSub){
+  const wrap = document.getElementById(id);
+  const fields = wrap.querySelectorAll('.editable-field');
+  fields[0].textContent = origTitle;
+  fields[1].textContent = origSub;
+  fields.forEach(f=>{ f.contentEditable='false'; f.style.background=''; f.style.padding=''; f.style.outline=''; });
+  wrap.querySelector('.edit-header-actions').style.display = 'none';
+}
+
 async function renderSkillsPage(){
   const root = document.getElementById('pageContent');
-  const { data: skills, error } = await sb.from('skills').select('*').order('sort_order');
+  const [{ data: skills, error }, { data: metas }] = await Promise.all([
+    sb.from('skills').select('*').order('sort_order'),
+    sb.from('site_meta').select('*'),
+  ]);
   if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const metaMap = {}; (metas||[]).forEach(m=>metaMap[m.meta_key]=m);
 
   root.innerHTML = `
-    <div class="page-title">⚡ Skills</div>
-    <div class="page-sub">管理技能分類與標籤。改完按「儲存」即可即時反映到網站。</div>
+    ${makeEditablePageHeader('skills','⚡ Skills','管理技能分類與標籤。改完按「儲存」即可即時反映到網站。', metaMap)}
     <div id="skillsList"></div>
     <button class="btn btn-ghost" id="addSkillBtn">+ 新增技能分類</button>
   `;
@@ -388,20 +526,23 @@ function buildSkillCard(s){
    ============================================================ */
 async function renderProjectsPage(){
   const root = document.getElementById('pageContent');
-  const { data: projects, error } = await sb.from('projects').select('*').order('sort_order');
+  const [{ data: projects, error }, { data: metas }] = await Promise.all([
+    sb.from('projects').select('*').order('sort_order'),
+    sb.from('site_meta').select('*'),
+  ]);
   if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const metaMap = {}; (metas||[]).forEach(m=>metaMap[m.meta_key]=m);
 
   root.innerHTML = `
-    <div class="page-title">★ Main Quests</div>
-    <div class="page-sub">管理三個主要專案的內容、圖片、流程與成果。</div>
+    ${makeEditablePageHeader('projects','★ Main Quests','管理三個主要專案的內容、圖片、流程與成果。', metaMap)}
     <div id="projList"></div>
   `;
   const list = document.getElementById('projList');
 
   for(const p of projects){
-    const { data: metas } = await sb.from('project_meta').select('*').eq('project_id', p.id).order('sort_order');
+    const { data: pMetas } = await sb.from('project_meta').select('*').eq('project_id', p.id).order('sort_order');
     const { data: steps } = await sb.from('project_steps').select('*').eq('project_id', p.id).order('sort_order');
-    list.appendChild(buildProjectCard(p, metas||[], steps||[]));
+    list.appendChild(buildProjectCard(p, pMetas||[], steps||[]));
   }
 }
 
@@ -415,7 +556,7 @@ function buildProjectCard(p, metas, steps){
     </div>
 
     <div class="img-upload">
-      <div class="img-preview" id="thumbPreview-${p.id}">
+      <div class="img-preview" id="thumbPreview-${p.id}" style="width:160px;height:90px;">
         ${p.thumb_image_url ? `<img src="${esc(p.thumb_image_url)}">` : '無圖'}
       </div>
       <div style="flex:1;">
@@ -425,7 +566,7 @@ function buildProjectCard(p, metas, steps){
     </div>
 
     <div class="img-upload">
-      <div class="img-preview" id="heroPreview-${p.id}">
+      <div class="img-preview" id="heroPreview-${p.id}" style="width:160px;height:90px;">
         ${p.hero_image_url ? `<img src="${esc(p.hero_image_url)}">` : '無圖'}
       </div>
       <div style="flex:1;">
@@ -567,55 +708,18 @@ function buildProjectCard(p, metas, steps){
           </div>
         </div>
         <div class="img-upload" style="margin-bottom:0;">
-          <div class="img-preview step-img-preview">
+          <div class="img-preview step-img-preview" style="width:160px;height:90px;cursor:${s.image_url?'zoom-in':'default'};" onclick="if(this.dataset.url)adminLightbox(this.dataset.url)" data-url="${esc(s.image_url||'')}">
             ${s.image_url ? `<img src="${esc(s.image_url)}">` : '無圖'}
           </div>
           <div style="flex:1;">
-            <label>步驟示意圖（展示設計過程，吸引人觀看）</label>
+            <label>步驟示意圖（展示設計過程，點擊預覽區域可放大）</label>
             <input type="file" accept="image/*" class="step-img-file">
           </div>
         </div>
       </div>
     `;
 
-    // 只有 drag handle 才能開始拖曳
-    const handle = row.querySelector('.drag-handle');
-    handle.addEventListener('mousedown', ()=>{ row.setAttribute('draggable','true'); });
-    handle.addEventListener('mouseup', ()=>{ row.setAttribute('draggable','false'); });
-    row.addEventListener('dragstart', e=>{
-      e.dataTransfer.effectAllowed = 'move';
-      setTimeout(()=>{ row.style.opacity = '0.35'; row.style.borderStyle = 'solid'; }, 0);
-      stepsList._dragging = row;
-    });
-    row.addEventListener('dragend', ()=>{
-      row.style.opacity = '1';
-      row.style.borderStyle = 'dashed';
-      row.setAttribute('draggable','false');
-      stepsList._dragging = null;
-      document.querySelectorAll('.step-drop-indicator').forEach(el=>el.remove());
-    });
-    row.addEventListener('dragover', e=>{
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      const dragging = stepsList._dragging;
-      if(!dragging || dragging === row) return;
-      const rect = row.getBoundingClientRect();
-      const mid = rect.top + rect.height / 2;
-      document.querySelectorAll('.step-drop-indicator').forEach(el=>el.remove());
-      const indicator = document.createElement('div');
-      indicator.className = 'step-drop-indicator';
-      indicator.style.cssText = 'height:2px; background:var(--neon-cyan); border-radius:1px; margin:2px 0; transition:none;';
-      if(e.clientY < mid){
-        stepsList.insertBefore(indicator, row);
-        stepsList.insertBefore(dragging, indicator);
-      }else{
-        if(row.nextSibling) stepsList.insertBefore(indicator, row.nextSibling);
-        else stepsList.appendChild(indicator);
-        if(row.nextSibling) stepsList.insertBefore(dragging, row.nextSibling);
-        else stepsList.appendChild(dragging);
-      }
-    });
-
+    // 只有 drag handle 才能開始拖曳（由 makeDraggable 統一處理）
     row.querySelector('.step-del').addEventListener('click', async ()=>{
       if(row.dataset.id){
         await sb.from('project_steps').delete().eq('id', row.dataset.id);
@@ -628,7 +732,10 @@ function buildProjectCard(p, metas, steps){
       try{
         const url = await uploadImage(file);
         row.dataset.imageUrl = url;
-        row.querySelector('.step-img-preview').innerHTML = `<img src="${esc(url)}">`;
+        const prev = row.querySelector('.step-img-preview');
+        prev.innerHTML = `<img src="${esc(url)}">`;
+        prev.dataset.url = url;
+        prev.style.cursor = 'zoom-in';
         showToast('圖片上傳成功，記得按「儲存專案內容」');
       }catch(err){ showToast('上傳失敗：'+err.message, true); }
     });
@@ -636,6 +743,7 @@ function buildProjectCard(p, metas, steps){
     stepsList.appendChild(row);
   }
   steps.forEach(addStepRow);
+  makeDraggable(stepsList, '.step-drag-row', '.drag-handle');
   card.querySelector('.btn-add-step').addEventListener('click', ()=>{
     addStepRow({ step_number: String(stepsList.children.length+1).padStart(2,'0'), title:'', text_zh:'', image_url:'' });
   });
@@ -687,29 +795,51 @@ function buildProjectCard(p, metas, steps){
    ============================================================ */
 async function renderGalleryPage(){
   const root = document.getElementById('pageContent');
-  const { data: items, error } = await sb.from('gallery').select('*').order('sort_order');
+  const [{ data: items, error }, { data: metas }] = await Promise.all([
+    sb.from('gallery').select('*').order('sort_order'),
+    sb.from('site_meta').select('*'),
+  ]);
   if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const metaMap = {}; (metas||[]).forEach(m=>metaMap[m.meta_key]=m);
 
   root.innerHTML = `
-    <div class="page-title">🎨 Gallery</div>
-    <div class="page-sub">管理作品集——影片（YouTube/Vimeo）、社群圖像、插畫。上傳封面圖跟連結後，首頁 Gallery 區塊就會顯示。</div>
+    ${makeEditablePageHeader('gallery','🎨 Gallery','管理作品集——影片（YouTube/Vimeo）、社群圖像、插畫。上傳封面圖跟連結後，首頁 Gallery 區塊就會顯示。', metaMap)}
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);">⠿ 拖曳卡片可更改排列次序</span>
+      <button class="btn btn-primary" id="saveGalleryOrderBtn">儲存排序</button>
+    </div>
     <div id="galleryList"></div>
     <button class="btn btn-ghost" id="addGalleryBtn" style="margin-top:8px;">+ 新增作品</button>
   `;
 
   const list = document.getElementById('galleryList');
   items.forEach(item => list.appendChild(buildGalleryCard(item)));
+  makeDraggable(list, '.gallery-draggable-card', '.drag-handle');
+
   document.getElementById('addGalleryBtn').addEventListener('click', ()=>{
     list.appendChild(buildGalleryCard({ id:null, title:'', type:'image', cover_url:'', media_url:'', tags:[], year:'', client:'', is_published:true, sort_order: items.length+1 }));
+  });
+
+  document.getElementById('saveGalleryOrderBtn').addEventListener('click', async ()=>{
+    const cards = [...list.querySelectorAll('.gallery-draggable-card')];
+    for(let i=0; i<cards.length; i++){
+      const id = cards[i].dataset.itemId;
+      if(id) await sb.from('gallery').update({ sort_order: i+1 }).eq('id', id);
+    }
+    showToast('排序已儲存');
   });
 }
 
 function buildGalleryCard(item){
   const card = document.createElement('div');
-  card.className = 'panel';
+  card.className = 'panel gallery-draggable-card';
+  card.dataset.itemId = item.id || '';
   card.innerHTML = `
     <div class="panel-head">
-      <h3>${esc(item.title) || '（新作品）'}</h3>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="drag-handle" style="cursor:grab;color:var(--ink-soft);font-size:20px;user-select:none;line-height:1;" title="拖曳調整排列次序">⠿</span>
+        <h3>${esc(item.title) || '（新作品）'}</h3>
+      </div>
       <span class="tag">${esc(item.type||'image')}</span>
     </div>
     <div class="grid2">
@@ -812,12 +942,15 @@ function buildGalleryCard(item){
 
 async function renderWorksPage(){
   const root = document.getElementById('pageContent');
-  const { data: works, error } = await sb.from('works').select('*').order('sort_order');
+  const [{ data: works, error }, { data: metas }] = await Promise.all([
+    sb.from('works').select('*').order('sort_order'),
+    sb.from('site_meta').select('*'),
+  ]);
   if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const metaMap = {}; (metas||[]).forEach(m=>metaMap[m.meta_key]=m);
 
   root.innerHTML = `
-    <div class="page-title">▸ Past Works</div>
-    <div class="page-sub">管理過去工作經歷時間軸。</div>
+    ${makeEditablePageHeader('works','▸ Past Works','管理過去工作經歷時間軸。', metaMap)}
     <div id="worksList"></div>
     <button class="btn btn-ghost" id="addWorkBtn">+ 新增work經歷</button>
   `;
@@ -874,12 +1007,15 @@ function buildWorkCard(w){
    ============================================================ */
 async function renderEducationPage(){
   const root = document.getElementById('pageContent');
-  const { data: edus, error } = await sb.from('education').select('*').order('sort_order');
+  const [{ data: edus, error }, { data: metas }] = await Promise.all([
+    sb.from('education').select('*').order('sort_order'),
+    sb.from('site_meta').select('*'),
+  ]);
   if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const metaMap = {}; (metas||[]).forEach(m=>metaMap[m.meta_key]=m);
 
   root.innerHTML = `
-    <div class="page-title">🎓 Education</div>
-    <div class="page-sub">管理學歷資訊。</div>
+    ${makeEditablePageHeader('education','🎓 Education','管理學歷資訊。', metaMap)}
     <div id="eduListAdmin"></div>
     <button class="btn btn-ghost" id="addEduBtn">+ 新增學歷</button>
   `;
@@ -980,8 +1116,7 @@ async function renderHeroStatsPage(){
     </div>`;
 
   root.innerHTML = `
-    <div class="page-title">🧑 Hero Profile</div>
-    <div class="page-sub">管理首頁 Hero 右邊的 PLAYER STATS。現在每一欄都可以改：左邊名稱、右邊文字、Percent 進度條。</div>
+    ${makeEditablePageHeader('herostats','🧑 Hero Profile','管理首頁 Hero 右邊的 PLAYER STATS。現在每一欄都可以改：左邊名稱、右邊文字、Percent 進度條。', map)}
 
     <div class="panel">
       <div class="panel-head">
@@ -1100,8 +1235,7 @@ async function renderBioPage(){
   ];
 
   root.innerHTML = `
-    <div class="page-title">📜 Bio / Hero 文字</div>
-    <div class="page-sub">管理首頁自介與關於我頁面的段落文字。</div>
+    ${makeEditablePageHeader('bio','📜 Bio / Hero 文字','管理首頁自介與關於我頁面的段落文字。', map)}
     <div id="bioFields"></div>
     <button class="btn btn-primary" id="saveBioBtn" style="margin-top:10px;">儲存全部</button>
   `;
@@ -1155,8 +1289,7 @@ async function renderHeroBgPage(){
   ];
 
   root.innerHTML = `
-    <div class="page-title">🌆 Hero Banner</div>
-    <div class="page-sub">上傳三張首頁頂部背景圖，網站會依香港當地時間自動切換顯示。建議使用同一構圖、不同光線氛圍的三張圖，切換時效果最自然。建議尺寸 1600×800 以上，橫向構圖。</div>
+    ${makeEditablePageHeader('herobg','🌆 Hero Banner','上傳三張首頁頂部背景圖，網站會依香港當地時間自動切換顯示。建議使用同一構圖、不同光線氛圍的三張圖，切換時效果最自然。建議尺寸 1600×800 以上，橫向構圖。', map)}
     <div id="heroBgList"></div>
   `;
 
@@ -1215,6 +1348,17 @@ async function renderHeroBgPage(){
 }
 
 /* ---------- 小工具：HTML escape，避免使用者輸入內容破壞畫面 ---------- */
+function adminLightbox(url){
+  document.getElementById('adminLightboxImg').src = url;
+  const ov = document.getElementById('adminLightboxOverlay');
+  ov.style.display = 'flex';
+}
+function adminLightboxClose(){
+  document.getElementById('adminLightboxOverlay').style.display = 'none';
+  document.getElementById('adminLightboxImg').src = '';
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') adminLightboxClose(); });
+
 function esc(str){
   if(str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1223,6 +1367,12 @@ function esc(str){
 /* ---------- 初始化 ---------- */
 checkSession();
 </script>
+
+<!-- Admin Lightbox -->
+<div id="adminLightboxOverlay" onclick="adminLightboxClose()" style="display:none;position:fixed;inset:0;background:rgba(6,8,18,0.93);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:32px;">
+  <button onclick="adminLightboxClose()" style="position:absolute;top:20px;right:24px;background:var(--panel);border:1px solid var(--border);color:var(--ink-soft);width:36px;height:36px;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-size:16px;">✕</button>
+  <img id="adminLightboxImg" src="" style="max-width:100%;max-height:88vh;border-radius:8px;border:2px solid var(--neon-cyan);display:block;">
+</div>
 
 </body>
 </html>
