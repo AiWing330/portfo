@@ -172,8 +172,8 @@ nav.wrap{ display:flex; align-items:center; justify-content:space-between; heigh
   border-radius: 6px;
   overflow:hidden;
   border: 1px solid var(--border);
-  background: var(--panel);
-  aspect-ratio: 4/3;
+  background: var(--bg-deep);
+  aspect-ratio: 16/9;
   width: 200px;
   flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
@@ -183,7 +183,11 @@ nav.wrap{ display:flex; align-items:center; justify-content:space-between; heigh
   transition: border-color .15s, transform .15s;
 }
 .step-image:hover{ border-color: var(--neon-cyan); transform: translateY(-2px); }
-.step-image img{ width:100%; height:100%; object-fit:cover; }
+.step-image img{
+  max-width:100%; max-height:100%;
+  width:auto; height:auto;
+  object-fit: contain; display:block;
+}
 .step-image .zoom-hint{
   position:absolute; bottom:6px; right:8px;
   font-family: var(--font-mono); font-size:9px; color: var(--neon-gold);
@@ -208,6 +212,8 @@ nav.wrap{ display:flex; align-items:center; justify-content:space-between; heigh
 .lightbox-overlay.open{ display:flex; }
 .lightbox-overlay img{
   max-width: 100%; max-height: 86vh;
+  width: auto; height: auto;
+  object-fit: contain;
   border-radius: 8px;
   border: 2px solid var(--neon-cyan);
   box-shadow: 0 16px 48px rgba(0,0,0,0.5);

@@ -405,6 +405,13 @@ section{ padding: 80px 0; }
   color: rgba(255,255,255,0.5);
   border-bottom: 2px solid var(--border);
   position:relative;
+  background: var(--bg-deep);
+  overflow:hidden;
+}
+.project-thumb img{
+  width:100%; height:100%;
+  object-fit: contain;
+  display:block;
 }
 .project-thumb .ctv{
   position:absolute;
@@ -515,15 +522,18 @@ section{ padding: 80px 0; }
 .gallery-card:hover{ border-color: var(--neon-cyan); transform: translateY(-4px); }
 .gallery-thumb{
   position: relative;
-  width: 220px; height: 140px;
-  background: var(--panel-2);
+  width: 220px; height: 160px;
+  background: var(--bg-deep);
   overflow: hidden;
+  display:flex; align-items:center; justify-content:center;
 }
 .gallery-thumb img{
-  width:100%; height:100%; object-fit:cover; display:block;
+  max-width:100%; max-height:100%;
+  width:auto; height:auto;
+  object-fit: contain; display:block;
   transition: transform .3s;
 }
-.gallery-card:hover .gallery-thumb img{ transform: scale(1.04); }
+.gallery-card:hover .gallery-thumb img{ transform: scale(1.03); }
 .gallery-thumb-placeholder{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;
@@ -566,46 +576,68 @@ section{ padding: 80px 0; }
   border: 1px solid var(--border); border-radius: 3px; padding: 2px 7px;
 }
 
-/* Gallery Lightbox */
+/* Gallery Lightbox — 固定視窗，圖片居中，標題固定底部 */
 .gallery-lightbox{
   position:fixed; inset:0; z-index:2000;
-  background: rgba(6,8,18,0.95);
-  backdrop-filter: blur(8px);
-  display:none; align-items:center; justify-content:center;
-  padding: 24px;
+  background: rgba(6,8,18,0.96);
+  backdrop-filter: blur(10px);
+  display:none;
+  flex-direction: column;
+  align-items:center;
+  justify-content:center;
 }
 .gallery-lightbox.open{ display:flex; }
 .gallery-lb-inner{
   position:relative;
-  max-width: 900px; width:100%;
+  width:100%; height:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 }
 .gallery-lb-close{
-  position:absolute; top:-40px; right:0;
+  position:fixed; top:20px; right:24px;
   background: var(--panel); border:1px solid var(--border);
-  color: var(--ink-soft); width:32px; height:32px;
-  border-radius:4px; cursor:pointer;
-  font-family: var(--font-mono); font-size:14px;
+  color: var(--ink-soft); width:36px; height:36px;
+  border-radius:6px; cursor:pointer; z-index:10;
+  font-family: var(--font-mono); font-size:16px;
   display:flex; align-items:center; justify-content:center;
   transition: all .15s;
 }
 .gallery-lb-close:hover{ color: var(--neon-pink); border-color: var(--neon-pink); }
+.gallery-lb-media{
+  flex:1;
+  width:100%;
+  display:flex; align-items:center; justify-content:center;
+  padding: 56px 40px 16px;
+  overflow:hidden;
+  min-height:0;
+}
 .gallery-lb-img{
-  width:100%; border-radius:6px;
+  max-width:100%; max-height:100%;
+  width:auto; height:auto;
+  object-fit: contain;
+  border-radius:6px;
   border:2px solid var(--neon-cyan);
   display:block;
 }
 .gallery-lb-video{
-  width:100%; aspect-ratio: 16/9;
+  width:100%; max-width:960px;
+  aspect-ratio: 16/9;
   border-radius:6px; border:2px solid var(--neon-cyan);
 }
 .gallery-lb-caption{
-  margin-top: 14px;
+  flex-shrink:0;
+  width:100%;
+  padding: 14px 32px 24px;
+  background: linear-gradient(transparent, rgba(6,8,18,0.95) 30%);
   display:flex; align-items:center; justify-content:space-between;
+  gap:16px;
 }
 .gallery-lb-caption .title{
-  font-family: var(--font-display); font-size:15px;
+  font-family: var(--font-display); font-size:16px;
+  color: var(--ink);
 }
-.gallery-lb-caption .tags{ display:flex; gap:6px; }
+.gallery-lb-caption .tags{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
 
 /* ---------- CONTACT ---------- */
 .contact-card{
@@ -814,7 +846,7 @@ footer{
 <div class="gallery-lightbox" id="galleryLightbox" onclick="if(event.target===this)closeGalleryLb()">
   <div class="gallery-lb-inner">
     <button class="gallery-lb-close" onclick="closeGalleryLb()">✕</button>
-    <div id="galleryLbContent"></div>
+    <div class="gallery-lb-media" id="galleryLbContent"></div>
     <div class="gallery-lb-caption">
       <span class="title" id="galleryLbTitle"></span>
       <div class="tags" id="galleryLbTags"></div>
@@ -1086,7 +1118,8 @@ async function loadDataFromSupabase(){
       ]);
       return {
         key: p.key,
-        thumbGradient: p.thumb_image_url ? `url('${p.thumb_image_url}') center/cover` : p.thumb_gradient,
+        thumbGradient: p.thumb_gradient || 'linear-gradient(135deg,#1B2042,#0B0E1C)',
+        thumb_image_url: p.thumb_image_url || '',
         hasImage: !!p.thumb_image_url,
         title: p.title,
         role: { zh:p.role_zh, en:p.role_en, ja:p.role_ja },
@@ -1234,8 +1267,10 @@ function renderProjects(){
   const grid = document.getElementById('projectsGrid');
   grid.innerHTML = DATA.projects.map((p,i)=>`
     <a href="project.html?key=${encodeURIComponent(p.key)}" class="project-card pixel-border">
-      <div class="project-thumb" style="background:${p.thumbGradient};">
-        ${p.hasImage ? '' : p.title}
+      <div class="project-thumb" style="${p.hasImage ? '' : 'background:'+p.thumbGradient+';'}">
+        ${p.hasImage
+          ? `<img src="${p.thumb_image_url}" alt="${p.title}" loading="lazy">`
+          : p.title}
         <span class="ctv">${t('project.clickToView')}</span>
       </div>
       <div class="project-body">
@@ -1408,8 +1443,18 @@ function getVimeoEmbedUrl(url){
   const m = url.match(/vimeo\.com\/(\d+)/);
   return m ? `https://player.vimeo.com/video/${m[1]}?autoplay=1` : null;
 }
+function getGoogleDriveEmbedUrl(url){
+  // 支援格式：
+  // https://drive.google.com/file/d/FILE_ID/view
+  // https://drive.google.com/open?id=FILE_ID
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m1) return `https://drive.google.com/file/d/${m1[1]}/preview`;
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m2) return `https://drive.google.com/file/d/${m2[1]}/preview`;
+  return null;
+}
 function getEmbedUrl(url){
-  return getYoutubeEmbedUrl(url) || getVimeoEmbedUrl(url) || null;
+  return getYoutubeEmbedUrl(url) || getVimeoEmbedUrl(url) || getGoogleDriveEmbedUrl(url) || null;
 }
 
 async function loadGallery(){
