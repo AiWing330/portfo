@@ -534,11 +534,11 @@ section.hero{ border-top: none; }
 }
 .gallery-thumb img{
   width:100%; height:100%;
-  object-fit: cover;
+  object-fit: contain;
   display:block;
   transition: transform .3s;
 }
-.gallery-card:hover .gallery-thumb img{ transform: scale(1.05); }
+.gallery-card:hover .gallery-thumb img{ transform: scale(1.04); }
 .gallery-thumb-placeholder{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;
@@ -590,12 +590,9 @@ section.hero{ border-top: none; }
   flex-direction: column;
   align-items:center;
   justify-content:center;
+  cursor: pointer;
 }
 .gallery-lightbox.open{ display:flex; }
-.gallery-lb-bg{
-  position:absolute; inset:0; z-index:0;
-  cursor:pointer;
-}
 .gallery-lb-inner{
   position:relative; z-index:1;
   width:100%; height:100%;
@@ -603,6 +600,7 @@ section.hero{ border-top: none; }
   flex-direction:column;
   align-items:center;
   pointer-events:none;
+  cursor:default;
 }
 .gallery-lb-close{
   position:fixed; top:20px; right:24px;
@@ -623,6 +621,7 @@ section.hero{ border-top: none; }
   overflow:hidden;
   min-height:0;
   pointer-events:auto;
+  cursor:default;
 }
 .gallery-lb-img{
   max-width:100%; max-height:100%;
@@ -631,11 +630,13 @@ section.hero{ border-top: none; }
   border-radius:6px;
   border:2px solid var(--neon-cyan);
   display:block;
+  cursor:default;
 }
 .gallery-lb-video{
   width:100%; max-width:960px;
   aspect-ratio: 16/9;
   border-radius:6px; border:2px solid var(--neon-cyan);
+  cursor:default;
 }
 .gallery-lb-caption{
   flex-shrink:0;
@@ -645,6 +646,7 @@ section.hero{ border-top: none; }
   display:flex; align-items:center; justify-content:space-between;
   gap:16px;
   pointer-events:auto;
+  cursor:default;
 }
 .gallery-lb-caption .title{
   font-family: var(--font-display); font-size:16px;
@@ -685,8 +687,8 @@ footer{
 <header>
   <nav class="wrap">
     <div class="logo-block">
-      <div class="logo">WING LEE</div>
-      <div class="logo-sub" data-i18n="nav.level">LV.35 DESIGNER</div>
+      <div class="logo" id="siteNavName">WING LEE</div>
+      <div class="logo-sub" id="siteNavSub">LV.35 DESIGNER</div>
     </div>
     <div class="navlinks">
       <a href="#top" class="active" data-section="top" data-i18n="nav.home">HOME</a>
@@ -842,22 +844,20 @@ footer{
     <div class="wrap">
       <div class="contact-card pixel-border fade-in">
         <div class="section-tag" style="justify-content:center; display:flex;" data-i18n="contact.tag">✦ NEXT QUEST</div>
-        <h2 data-i18n="contact.title">LET'S BUILD SOMETHING TOGETHER</h2>
-        <p data-i18n="contact.desc">無論是品牌策略、內容企劃或設計協作，歡迎跟我聊聊你的專案。</p>
+        <h2 id="siteContactTitle" data-i18n="contact.title">LET'S BUILD SOMETHING TOGETHER</h2>
+        <p id="siteContactDesc" data-i18n="contact.desc">無論是品牌策略、內容企劃或設計協作，歡迎跟我聊聊你的專案。</p>
         <div class="contact-links">
-          <a href="mailto:your@email.com" class="btn btn-primary" data-i18n="contact.email">✉ EMAIL ME</a>
-          <a href="#" class="btn btn-ghost">LINKEDIN</a>
-          <a href="#" class="btn btn-ghost">BEHANCE</a>
+          <a id="siteEmailBtn" href="mailto:your@email.com" class="btn btn-primary" data-i18n="contact.email">✉ EMAIL ME</a>
+          <a id="siteLinkedinBtn" href="#" class="btn btn-ghost">LINKEDIN</a>
+          <a id="siteBehanceBtn" href="#" class="btn btn-ghost">BEHANCE</a>
         </div>
       </div>
     </div>
   </section>
-
 </main>
 
 <!-- ============ GALLERY LIGHTBOX ============ -->
 <div class="gallery-lightbox" id="galleryLightbox">
-  <div class="gallery-lb-bg" onclick="closeGalleryLb()"></div>
   <div class="gallery-lb-inner">
     <button class="gallery-lb-close" onclick="closeGalleryLb()">✕</button>
     <div class="gallery-lb-media" id="galleryLbContent"></div>
@@ -869,7 +869,7 @@ footer{
 </div>
 
 <footer>
-  <div class="wrap" data-i18n="footer.text">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
+  <div class="wrap" id="siteFooterText" data-i18n="footer.text">© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER</div>
 </footer>
 
 
@@ -1217,6 +1217,17 @@ async function loadDataFromSupabase(){
         ],
       },
       cvPdfUrl: metaMap.cv_pdf_url?.value_zh || '',
+      siteInfo: {
+        navName:      metaMap.nav_name?.value_zh       || '',
+        navSub:       metaMap.nav_sub?.value_zh        || '',
+        contactTitle: metaMap.contact_title?.value_zh  || '',
+        contactDesc:  metaMap.contact_desc?.value_zh   || '',
+        email:        metaMap.contact_email?.value_zh  || '',
+        emailLabel:   metaMap.contact_email_label?.value_zh || '',
+        linkedin:     metaMap.contact_linkedin?.value_zh || '',
+        behance:      metaMap.contact_behance?.value_zh  || '',
+        footerText:   metaMap.footer_text?.value_zh    || '',
+      },
     };
   }catch(e){
     console.error('Supabase fetch failed, falling back to local data', e);
@@ -1259,6 +1270,19 @@ function applyStaticI18n(){
       cvBtn.setAttribute('aria-disabled', 'true');
     }
   }
+
+  // Site Info：Nav Logo、Contact、Footer（有資料才覆蓋，沒設定就用 HTML 預設值）
+  const si = DATA.siteInfo || {};
+  if(si.navName)   { const el=document.getElementById('siteNavName');    if(el) el.textContent=si.navName; }
+  if(si.navSub)    { const el=document.getElementById('siteNavSub');     if(el) el.textContent=si.navSub; }
+  if(si.contactTitle){ const el=document.getElementById('siteContactTitle'); if(el) el.textContent=si.contactTitle; }
+  if(si.contactDesc) { const el=document.getElementById('siteContactDesc');  if(el) el.textContent=si.contactDesc; }
+  if(si.emailLabel){ const el=document.getElementById('siteEmailBtn');   if(el) el.textContent=si.emailLabel; }
+  if(si.email)     { const el=document.getElementById('siteEmailBtn');   if(el) el.href='mailto:'+si.email; }
+  if(si.linkedin)  { const el=document.getElementById('siteLinkedinBtn');if(el && si.linkedin!=='#') el.href=si.linkedin; }
+  if(si.behance)   { const el=document.getElementById('siteBehanceBtn'); if(el && si.behance!=='#') el.href=si.behance; }
+  if(si.footerText){ const el=document.getElementById('siteFooterText'); if(el) el.textContent=si.footerText; }
+
   document.documentElement.lang = currentLang === 'zh' ? 'zh-Hant' : currentLang;
 }
 
@@ -1531,6 +1555,12 @@ function closeGalleryLb(){
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeGalleryLb(); });
+
+// 點擊 lightbox 空白處關閉（不是圖片、影片、標題、標籤、✕ 按鈕）
+document.getElementById('galleryLightbox').addEventListener('click', e=>{
+  const safe = e.target.closest('.gallery-lb-img, .gallery-lb-video, .gallery-lb-caption, .gallery-lb-close, iframe');
+  if(!safe) closeGalleryLb();
+});
 
 document.getElementById('galleryPrev').addEventListener('click', ()=>{
   document.getElementById('galleryCarousel').scrollBy({left:-500, behavior:'smooth'});

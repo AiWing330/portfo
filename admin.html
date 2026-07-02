@@ -189,6 +189,7 @@ label{ display:block; font-family: var(--font-mono); font-size: 11px; color: var
         <a data-page="education">🎓 Education</a>
         <a data-page="bio">📜 Bio Text</a>
         <a data-page="herobg">🌆 Hero Banner</a>
+        <a data-page="siteinfo">🌐 Site Info</a>
       </nav>
       <div class="logout">
         <button class="btn btn-ghost" id="logoutBtn" style="width:100%;">⎋ LOGOUT</button>
@@ -308,6 +309,7 @@ async function renderPage(page){
   if(page === 'education') return renderEducationPage();
   if(page === 'bio') return renderBioPage();
   if(page === 'herobg') return renderHeroBgPage();
+  if(page === 'siteinfo') return renderSiteInfoPage();
 }
 
 /* ============================================================
@@ -1358,6 +1360,124 @@ function adminLightboxClose(){
   document.getElementById('adminLightboxImg').src = '';
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') adminLightboxClose(); });
+
+/* ============================================================
+   SITE INFO 頁（Nav Logo、Contact Section、Footer）
+   ============================================================ */
+async function renderSiteInfoPage(){
+  const root = document.getElementById('pageContent');
+  const { data: metas, error } = await sb.from('site_meta').select('*');
+  if(error){ root.innerHTML = `<div class="empty-state">讀取失敗：${error.message}</div>`; return; }
+  const map = {};
+  metas.forEach(m => map[m.meta_key] = m);
+  const get = (key, fallback='') => map[key]?.value_zh || fallback;
+
+  root.innerHTML = `
+    <div class="page-title">🌐 Site Info</div>
+    <div class="page-sub">管理網站最頂部的 Logo、最底部的 Contact 聯絡資訊，以及 Footer 版權文字。</div>
+
+    <!-- ① Nav Logo -->
+    <div class="panel">
+      <div class="panel-head"><h3>① Nav Logo（左上角）</h3><span class="tag">頂部導覽列</span></div>
+      <div class="grid2">
+        <div class="field">
+          <label>主名稱（大字）</label>
+          <input id="si-nav-name" value="${esc(get('nav_name','WING LEE'))}" placeholder="例如 WING LEE">
+        </div>
+        <div class="field">
+          <label>副標題（小字）</label>
+          <input id="si-nav-sub" value="${esc(get('nav_sub','LV.35 DESIGNER'))}" placeholder="例如 LV.35 DESIGNER">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="saveNavBtn">儲存 Nav Logo</button>
+    </div>
+
+    <!-- ② Contact Section -->
+    <div class="panel">
+      <div class="panel-head"><h3>② Contact Section（最底部聯絡區）</h3><span class="tag">CTA + 連結</span></div>
+      <div class="field"><label>區塊標題</label>
+        <input id="si-contact-title" value="${esc(get('contact_title','LET\'S BUILD SOMETHING TOGETHER'))}" placeholder="例如 LET'S BUILD SOMETHING TOGETHER">
+      </div>
+      <div class="field"><label>說明文字</label>
+        <textarea id="si-contact-desc" rows="3">${esc(get('contact_desc','無論是品牌策略、內容企劃或設計協作，歡迎跟我聊聊你的專案。'))}</textarea>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Email 地址</label>
+          <input id="si-email" value="${esc(get('contact_email','your@email.com'))}" placeholder="your@email.com" type="email">
+        </div>
+        <div class="field"><label>Email 按鈕文字</label>
+          <input id="si-email-label" value="${esc(get('contact_email_label','✉ EMAIL ME'))}" placeholder="✉ EMAIL ME">
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>LinkedIn 網址</label>
+          <input id="si-linkedin" value="${esc(get('contact_linkedin','#'))}" placeholder="https://linkedin.com/in/yourname">
+        </div>
+        <div class="field"><label>Behance 網址</label>
+          <input id="si-behance" value="${esc(get('contact_behance','#'))}" placeholder="https://behance.net/yourname">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="saveContactBtn">儲存 Contact</button>
+    </div>
+
+    <!-- ③ Footer -->
+    <div class="panel">
+      <div class="panel-head"><h3>③ Footer（最底部版權）</h3><span class="tag">版權文字</span></div>
+      <div class="field">
+        <label>Footer 文字</label>
+        <input id="si-footer" value="${esc(get('footer_text','© 2026 WING LEE · ALL RIGHTS RESERVED · LV.35 DESIGNER'))}" placeholder="© 2026 WING LEE · ALL RIGHTS RESERVED">
+      </div>
+      <button class="btn btn-primary" id="saveFooterBtn">儲存 Footer</button>
+    </div>
+  `;
+
+  // 儲存 Nav Logo
+  document.getElementById('saveNavBtn').addEventListener('click', async ()=>{
+    const pairs = [
+      { key:'nav_name',  val: document.getElementById('si-nav-name').value.trim() },
+      { key:'nav_sub',   val: document.getElementById('si-nav-sub').value.trim() },
+    ];
+    for(const p of pairs){
+      const { error } = await sb.from('site_meta').upsert(
+        { meta_key: p.key, value_zh: p.val, value_en: p.val, value_ja: p.val },
+        { onConflict: 'meta_key' }
+      );
+      if(error){ showToast(error.message, true); return; }
+    }
+    showToast('Nav Logo 已儲存');
+  });
+
+  // 儲存 Contact
+  document.getElementById('saveContactBtn').addEventListener('click', async ()=>{
+    const pairs = [
+      { key:'contact_title',       val: document.getElementById('si-contact-title').value.trim() },
+      { key:'contact_desc',        val: document.getElementById('si-contact-desc').value.trim() },
+      { key:'contact_email',       val: document.getElementById('si-email').value.trim() },
+      { key:'contact_email_label', val: document.getElementById('si-email-label').value.trim() },
+      { key:'contact_linkedin',    val: document.getElementById('si-linkedin').value.trim() },
+      { key:'contact_behance',     val: document.getElementById('si-behance').value.trim() },
+    ];
+    for(const p of pairs){
+      const { error } = await sb.from('site_meta').upsert(
+        { meta_key: p.key, value_zh: p.val, value_en: p.val, value_ja: p.val },
+        { onConflict: 'meta_key' }
+      );
+      if(error){ showToast(error.message, true); return; }
+    }
+    showToast('Contact 已儲存');
+  });
+
+  // 儲存 Footer
+  document.getElementById('saveFooterBtn').addEventListener('click', async ()=>{
+    const val = document.getElementById('si-footer').value.trim();
+    const { error } = await sb.from('site_meta').upsert(
+      { meta_key: 'footer_text', value_zh: val, value_en: val, value_ja: val },
+      { onConflict: 'meta_key' }
+    );
+    if(error){ showToast(error.message, true); return; }
+    showToast('Footer 已儲存');
+  });
+}
 
 function esc(str){
   if(str == null) return '';
