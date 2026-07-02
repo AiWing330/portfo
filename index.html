@@ -301,9 +301,13 @@ nav.wrap{
 }
 
 /* ---------- SECTION shared ---------- */
-section{ padding: 80px 0; }
+section{
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+}
+section.hero{ border-top: none; }
 .section-head{
-  margin-bottom: 48px;
+  margin-bottom: 36px;
 }
 .section-tag{
   font-family: var(--font-mono);
@@ -396,7 +400,7 @@ section{ padding: 80px 0; }
 .project-card:focus-visible{ outline: 2px solid var(--neon-cyan); outline-offset: 2px; }
 
 .project-thumb{
-  height: 150px;
+  aspect-ratio: 16/9;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -511,7 +515,7 @@ section{ padding: 80px 0; }
 .gallery-arrow.next{ right: -16px; }
 
 .gallery-card{
-  flex: 0 0 220px;
+  flex: 0 0 180px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -522,18 +526,19 @@ section{ padding: 80px 0; }
 .gallery-card:hover{ border-color: var(--neon-cyan); transform: translateY(-4px); }
 .gallery-thumb{
   position: relative;
-  width: 220px; height: 160px;
+  width: 180px;
+  aspect-ratio: 1/1;
   background: var(--bg-deep);
   overflow: hidden;
   display:flex; align-items:center; justify-content:center;
 }
 .gallery-thumb img{
-  max-width:100%; max-height:100%;
-  width:auto; height:auto;
-  object-fit: contain; display:block;
+  width:100%; height:100%;
+  object-fit: cover;
+  display:block;
   transition: transform .3s;
 }
-.gallery-card:hover .gallery-thumb img{ transform: scale(1.03); }
+.gallery-card:hover .gallery-thumb img{ transform: scale(1.05); }
 .gallery-thumb-placeholder{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;
@@ -587,12 +592,17 @@ section{ padding: 80px 0; }
   justify-content:center;
 }
 .gallery-lightbox.open{ display:flex; }
+.gallery-lb-bg{
+  position:absolute; inset:0; z-index:0;
+  cursor:pointer;
+}
 .gallery-lb-inner{
-  position:relative;
+  position:relative; z-index:1;
   width:100%; height:100%;
   display:flex;
   flex-direction:column;
   align-items:center;
+  pointer-events:none;
 }
 .gallery-lb-close{
   position:fixed; top:20px; right:24px;
@@ -602,6 +612,7 @@ section{ padding: 80px 0; }
   font-family: var(--font-mono); font-size:16px;
   display:flex; align-items:center; justify-content:center;
   transition: all .15s;
+  pointer-events:auto;
 }
 .gallery-lb-close:hover{ color: var(--neon-pink); border-color: var(--neon-pink); }
 .gallery-lb-media{
@@ -611,6 +622,7 @@ section{ padding: 80px 0; }
   padding: 56px 40px 16px;
   overflow:hidden;
   min-height:0;
+  pointer-events:auto;
 }
 .gallery-lb-img{
   max-width:100%; max-height:100%;
@@ -632,6 +644,7 @@ section{ padding: 80px 0; }
   background: linear-gradient(transparent, rgba(6,8,18,0.95) 30%);
   display:flex; align-items:center; justify-content:space-between;
   gap:16px;
+  pointer-events:auto;
 }
 .gallery-lb-caption .title{
   font-family: var(--font-display); font-size:16px;
@@ -843,7 +856,8 @@ footer{
 </main>
 
 <!-- ============ GALLERY LIGHTBOX ============ -->
-<div class="gallery-lightbox" id="galleryLightbox" onclick="if(event.target===this)closeGalleryLb()">
+<div class="gallery-lightbox" id="galleryLightbox">
+  <div class="gallery-lb-bg" onclick="closeGalleryLb()"></div>
   <div class="gallery-lb-inner">
     <button class="gallery-lb-close" onclick="closeGalleryLb()">✕</button>
     <div class="gallery-lb-media" id="galleryLbContent"></div>
