@@ -550,31 +550,72 @@ function buildProjectCard(p, metas, steps){
   const stepsList = card.querySelector('.steps-list');
   function addStepRow(s){
     const row = document.createElement('div');
-    row.style.marginBottom = '14px';
-    row.style.padding = '12px';
-    row.style.border = '1px dashed var(--border)';
-    row.style.borderRadius = '6px';
+    row.className = 'step-drag-row';
+    row.style.cssText = 'margin-bottom:10px; padding:12px; border:1px dashed var(--border); border-radius:6px; display:flex; gap:10px; align-items:flex-start; transition: opacity .15s;';
+    row.setAttribute('draggable', 'false');
     row.dataset.imageUrl = s.image_url || '';
+    row.dataset.id = s.id || '';
+    row.dataset.num = s.step_number || '';
     row.innerHTML = `
-      <div class="grid2" style="margin-bottom:8px;">
-        <input placeholder="Title（如 RESEARCH）" class="step-title" value="${esc(s.title)}">
-        <div style="display:flex; gap:6px;">
-          <input placeholder="描述內容" class="step-text" value="${esc(s.text_zh)}">
-          <button class="btn btn-danger step-del" style="padding:9px 12px;">✕</button>
+      <div class="drag-handle" style="cursor:grab; color:var(--ink-soft); font-size:20px; padding:2px 4px; user-select:none; flex-shrink:0; line-height:1;" title="拖曳調整順序">⠿</div>
+      <div style="flex:1;">
+        <div class="grid2" style="margin-bottom:8px;">
+          <input placeholder="Title（如 RESEARCH）" class="step-title" value="${esc(s.title)}">
+          <div style="display:flex; gap:6px;">
+            <input placeholder="描述內容" class="step-text" value="${esc(s.text_zh)}">
+            <button class="btn btn-danger step-del" style="padding:9px 12px;">✕</button>
+          </div>
         </div>
-      </div>
-      <div class="img-upload" style="margin-bottom:0;">
-        <div class="img-preview step-img-preview">
-          ${s.image_url ? `<img src="${esc(s.image_url)}">` : '無圖'}
-        </div>
-        <div style="flex:1;">
-          <label>步驟示意圖（展示設計過程，吸引人觀看）</label>
-          <input type="file" accept="image/*" class="step-img-file">
+        <div class="img-upload" style="margin-bottom:0;">
+          <div class="img-preview step-img-preview">
+            ${s.image_url ? `<img src="${esc(s.image_url)}">` : '無圖'}
+          </div>
+          <div style="flex:1;">
+            <label>步驟示意圖（展示設計過程，吸引人觀看）</label>
+            <input type="file" accept="image/*" class="step-img-file">
+          </div>
         </div>
       </div>
     `;
-    row.dataset.id = s.id || '';
-    row.dataset.num = s.step_number || '';
+
+    // 只有 drag handle 才能開始拖曳
+    const handle = row.querySelector('.drag-handle');
+    handle.addEventListener('mousedown', ()=>{ row.setAttribute('draggable','true'); });
+    handle.addEventListener('mouseup', ()=>{ row.setAttribute('draggable','false'); });
+    row.addEventListener('dragstart', e=>{
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(()=>{ row.style.opacity = '0.35'; row.style.borderStyle = 'solid'; }, 0);
+      stepsList._dragging = row;
+    });
+    row.addEventListener('dragend', ()=>{
+      row.style.opacity = '1';
+      row.style.borderStyle = 'dashed';
+      row.setAttribute('draggable','false');
+      stepsList._dragging = null;
+      document.querySelectorAll('.step-drop-indicator').forEach(el=>el.remove());
+    });
+    row.addEventListener('dragover', e=>{
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const dragging = stepsList._dragging;
+      if(!dragging || dragging === row) return;
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      document.querySelectorAll('.step-drop-indicator').forEach(el=>el.remove());
+      const indicator = document.createElement('div');
+      indicator.className = 'step-drop-indicator';
+      indicator.style.cssText = 'height:2px; background:var(--neon-cyan); border-radius:1px; margin:2px 0; transition:none;';
+      if(e.clientY < mid){
+        stepsList.insertBefore(indicator, row);
+        stepsList.insertBefore(dragging, indicator);
+      }else{
+        if(row.nextSibling) stepsList.insertBefore(indicator, row.nextSibling);
+        else stepsList.appendChild(indicator);
+        if(row.nextSibling) stepsList.insertBefore(dragging, row.nextSibling);
+        else stepsList.appendChild(dragging);
+      }
+    });
+
     row.querySelector('.step-del').addEventListener('click', async ()=>{
       if(row.dataset.id){
         await sb.from('project_steps').delete().eq('id', row.dataset.id);
@@ -591,11 +632,12 @@ function buildProjectCard(p, metas, steps){
         showToast('圖片上傳成功，記得按「儲存專案內容」');
       }catch(err){ showToast('上傳失敗：'+err.message, true); }
     });
+
     stepsList.appendChild(row);
   }
   steps.forEach(addStepRow);
   card.querySelector('.btn-add-step').addEventListener('click', ()=>{
-    addStepRow({ step_number: String(stepsList.children.length+1).padStart(2,'0') });
+    addStepRow({ step_number: String(stepsList.children.length+1).padStart(2,'0'), title:'', text_zh:'', image_url:'' });
   });
 
   // 儲存整個專案
